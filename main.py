@@ -1,5 +1,7 @@
-import escpos.printer
+from escpos import printer
 
-p = escpos.printer.Usb(0x28e9, 0x0289, out_ep= 0x03)
-p.text("Hello World.\n")
 
+
+
+# Setup the printer stuff
+p = printer.Usb(0x28e9, 0x0289, out_ep= 0x03, profile = "ZJ-5870")
