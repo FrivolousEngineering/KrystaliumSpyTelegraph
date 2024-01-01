@@ -33,14 +33,14 @@ MORSE_CODE_DICT = { 'A': '.-', 'B': '-...',
 
 
 def textToMorse(message):
-    cipher = ""
+    morse = ""
 
     for letter in message:
         if letter != ' ':
-            cipher += MORSE_CODE_DICT[letter.upper()] + ' '
+            morse += MORSE_CODE_DICT.get(letter.upper(), "") + ' '
         else:
-            cipher += ' '
-    return cipher
+            morse += ' '
+    return morse
 
 
 def trim(image):
@@ -173,7 +173,7 @@ font = ImageFont.truetype("Arial.ttf", FONT_SIZE)
 draw.point([(0, 0), (PAPER_WIDTH - 1, 0)], BLACK)
 
 txt = "Lorem ipsum dolor sit amet consectetur adipiscing elit. Aenean ac mi sit amet nulla convallis aliquet."
-txt = "A short message"
+txt = "A short message, oh noes!"
 
 parts = SentenceSplitter.findOptimalSplit(txt, 6)
 
