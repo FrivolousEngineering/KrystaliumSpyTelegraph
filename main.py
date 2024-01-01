@@ -165,6 +165,3 @@ img = addMargin(img, TEXT_MARGIN, TEXT_MARGIN, TEXT_MARGIN, 0, WHITE)
 img = concatImageVertical(Image.open("Assets/FloralDivider.png"), img)
 img = concatImageVertical(img, Image.open("Assets/FloralDividerUpside.png"))
 img.save("test.png")
-
-#printFinal("test.png")
-
