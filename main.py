@@ -160,7 +160,7 @@ font = ImageFont.truetype("Arial.ttf", FONT_SIZE)
 draw.point([(0, 0), (PAPER_WIDTH - 1, 0)], BLACK)
 
 txt = "Lorem ipsum dolor sit amet consectetur adipiscing elit. Aenean ac mi sit amet nulla convallis aliquet."
-txt = "The base has fallen. We do not know who the spy is. Proceed with caution. Trust noone. Death to the iron tzar."
+txt = "This is a very short message"
 
 parts = SentenceSplitter.findOptimalSplit(txt, 6)
 
@@ -182,4 +182,10 @@ img.save("test.png")
 
 # Setup the printer stuff
 p = printer.Usb(0x28e9, 0x0289, out_ep= 0x03, profile = "ZJ-5870")
-#p.image("test.png")
+p.image("test.png")
+
+# Move the paper a bit so that we have some whitespace to tear it off
+p.control("LF")
+p.control("LF")
+p.control("LF")
+p.control("LF")
