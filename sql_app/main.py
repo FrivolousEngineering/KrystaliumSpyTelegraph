@@ -25,3 +25,8 @@ def get_all_messages(db: Session = Depends(get_db)):
     Get all messages in the database
     """
     return crud.getAllMessages(db)
+
+
+@app.post("/messages/", response_model=schemas.Message, responses={400: {"model": schemas.BadRequestError}})
+def postMessage(message: schemas.MessageCreate, db: Session = Depends(get_db)):
+    return crud.createMessage(db, message)
