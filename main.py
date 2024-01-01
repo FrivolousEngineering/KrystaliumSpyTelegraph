@@ -150,6 +150,19 @@ def drawRotatedText(image, angle, xy, text, fill, *args, **kwargs):
     image.paste(color_image, mask)
 
 
+def printFinal(img: str):
+    # Setup the printer stuff
+    p = printer.Usb(0x28e9, 0x0289, out_ep=0x03, profile="ZJ-5870")
+
+    p.image(img)
+
+    # Move the paper a bit so that we have some whitespace to tear it off
+    p.control("LF")
+    p.control("LF")
+    p.control("LF")
+    p.control("LF")
+
+
 # Create a white image
 img = Image.new("RGB", (PAPER_WIDTH, 5000), WHITE)
 
@@ -171,7 +184,6 @@ font_center_x = PAPER_WIDTH / 2 + len(parts) * FONT_SIZE / 2 + (len(parts) - 1) 
 for i, part in enumerate(parts):
     drawRotatedText(img, -90, (font_center_x - i * (FONT_SIZE + LINE_SPACING), 0), textToMorse(part), BLACK, font=font)
 
-
 # Trim the image so that it's length is correct.
 img = trim(img)
 img = addMargin(img, TEXT_MARGIN, TEXT_MARGIN, TEXT_MARGIN, 0, WHITE)
@@ -180,12 +192,5 @@ img = concatImageVertical(Image.open("FloralDivider.png"), img)
 img = concatImageVertical(img, Image.open("FloralDividerUpside.png"))
 img.save("test.png")
 
-# Setup the printer stuff
-p = printer.Usb(0x28e9, 0x0289, out_ep= 0x03, profile = "ZJ-5870")
-p.image("test.png")
+printFinal("test.png")
 
-# Move the paper a bit so that we have some whitespace to tear it off
-p.control("LF")
-p.control("LF")
-p.control("LF")
-p.control("LF")
