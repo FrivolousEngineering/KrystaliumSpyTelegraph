@@ -3,11 +3,13 @@ from escpos import printer
 
 from PIL import Image, ImageDraw, ImageChops, ImageFont, ImageOps
 
+from SentenceSplitter import SentenceSplitter
+
 PAPER_WIDTH = 384
 
 FONT_SIZE = 50
 LINE_SPACING = 20
-MARGIN = 20
+TEXT_MARGIN = 20
 TEXT_OFFSET = 10  # Since we use dots, it makes the text seem not centered otherwise.
 
 WHITE = (255, 255, 255)
@@ -59,10 +61,10 @@ def addMargin(image, top, right, bottom, left, color):
 def custom_split(input_string, max_splits):
     words = input_string.split()
     result = []
-
+    max_letters_per_split = len(input_string) // max_splits
     while len(words) > 0 and len(result) < max_splits - 1:
         current_split = words.pop(0)
-        while len(words) > 0 and len(current_split) + len(words[0]) + 1 <= len(input_string) // max_splits:
+        while len(words) > 0 and len(current_split) + len(words[0]) + 1 <= max_letters_per_split:
             current_split += " " + words.pop(0)
 
         result.append(current_split)
@@ -102,6 +104,13 @@ def cutStringIntoParts(input_string, num_parts):
     return parts
 
 
+def concatImageVertical(im1, im2):
+    dst = Image.new('RGB', (im1.width, im1.height + im2.height))
+    dst.paste(im1, (0, 0))
+    dst.paste(im2, (0, im1.height))
+    return dst
+
+
 def drawRotatedText(image, angle, xy, text, fill, *args, **kwargs):
     """ Draw text at an angle into an image, takes the same arguments
         as Image.text() except for:
@@ -109,8 +118,6 @@ def drawRotatedText(image, angle, xy, text, fill, *args, **kwargs):
     :param image: Image to write text into
     :param angle: Angle to write text at
     """
-
-
     # get the size of our image
     width, height = image.size
     max_dim = max(width, height)
@@ -152,9 +159,10 @@ font = ImageFont.truetype("Arial.ttf", FONT_SIZE)
 # Draw two points in top left & right corner to prevent width from being trimmed ;)
 draw.point([(0, 0), (PAPER_WIDTH - 1, 0)], BLACK)
 
+txt = "Lorem ipsum dolor sit amet consectetur adipiscing elit. Aenean ac mi sit amet nulla convallis aliquet."
 txt = "The base has fallen. We do not know who the spy is. Proceed with caution. Trust noone. Death to the iron tzar."
 
-parts = custom_split(txt, 5)
+parts = SentenceSplitter.findOptimalSplit(txt, 6)
 
 # Calculate the location of the top line and count down from there
 font_center_x = PAPER_WIDTH / 2 + len(parts) * FONT_SIZE / 2 + (len(parts) - 1) * LINE_SPACING * 0.5 + TEXT_OFFSET
@@ -163,12 +171,15 @@ font_center_x = PAPER_WIDTH / 2 + len(parts) * FONT_SIZE / 2 + (len(parts) - 1) 
 for i, part in enumerate(parts):
     drawRotatedText(img, -90, (font_center_x - i * (FONT_SIZE + LINE_SPACING), 0), textToMorse(part), BLACK, font=font)
 
+
 # Trim the image so that it's length is correct.
 img = trim(img)
+img = addMargin(img, TEXT_MARGIN, TEXT_MARGIN, TEXT_MARGIN, 0, WHITE)
 
-img = addMargin(img, MARGIN, 0, MARGIN, 0, WHITE)
+img = concatImageVertical(Image.open("FloralDivider.png"), img)
+img = concatImageVertical(img, Image.open("FloralDividerUpside.png"))
 img.save("test.png")
 
 # Setup the printer stuff
 p = printer.Usb(0x28e9, 0x0289, out_ep= 0x03, profile = "ZJ-5870")
-p.image("test.png")
+#p.image("test.png")
