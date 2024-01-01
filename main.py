@@ -173,7 +173,7 @@ font = ImageFont.truetype("Arial.ttf", FONT_SIZE)
 draw.point([(0, 0), (PAPER_WIDTH - 1, 0)], BLACK)
 
 txt = "Lorem ipsum dolor sit amet consectetur adipiscing elit. Aenean ac mi sit amet nulla convallis aliquet."
-txt = "This is a very short message"
+txt = "A short message"
 
 parts = SentenceSplitter.findOptimalSplit(txt, 6)
 
@@ -192,5 +192,5 @@ img = concatImageVertical(Image.open("FloralDivider.png"), img)
 img = concatImageVertical(img, Image.open("FloralDividerUpside.png"))
 img.save("test.png")
 
-printFinal("test.png")
+#printFinal("test.png")
 

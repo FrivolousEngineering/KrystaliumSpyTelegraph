@@ -122,7 +122,7 @@ class SentenceSplitter:
         total_words = len(words)
 
         if num_parts > total_words:
-            raise ValueError("Number of parts cannot be greater than the number of words in the sentence.")
+            num_parts = total_words
 
         words_per_part = total_words // num_parts
         remainder = total_words % num_parts
