@@ -6,16 +6,24 @@ class SentenceSplitter:
     Splitting text into a number of lines, attempting to keep it balanced is a *weirdly* difficult problem.
     I've found multiple ways to solve the same issue, but as is tradition, i haven't been able to find one algorithm
     that clearly outshines the others.
-
     """
     @staticmethod
-    def findOptimalSplit(text: str, num_lines: int) -> List[str]:
+    def findOptimalSplit(text: str, max_lines: int) -> List[str]:
+        """
+        Attempts all known splitting algorithms, returning the result of the best one.
+        It will always give the result with the shortest max line length. When there are multiple results with the
+        same lowest max length, it will provide the one with the highest short line (as this provides a more "balanced"
+        result, which looks cleaner)
+        :param text: The string that needs to be split
+        :param max_lines: Max lines that should be returned
+        :return: List containing the splitted lines.
+        """
         # Since I've not been able to find one algorithm that is the best, we just go for the naive solution of trying
         # them all and just selecting whatever worked best on that specific case.
         parts = []
-        parts.append(SentenceSplitter.minRaggedSplit(text, num_lines))
-        parts.append(SentenceSplitter.recursiveSplit(text, num_lines))
-        parts.append(SentenceSplitter.simpleSplit(text, num_lines))
+        parts.append(SentenceSplitter.minRaggedSplit(text, max_lines))
+        parts.append(SentenceSplitter.recursiveSplit(text, max_lines))
+        parts.append(SentenceSplitter.simpleSplit(text, max_lines))
 
         for part in parts:
             # We also have a method that checks if it can improve the results by moving some words around.
