@@ -3,6 +3,7 @@ from escpos import printer
 
 from PIL import Image, ImageDraw, ImageChops, ImageFont, ImageOps
 
+from MorseTranslator import MorseTranslator
 from SentenceSplitter import SentenceSplitter
 
 PAPER_WIDTH = 384
@@ -14,33 +15,6 @@ TEXT_OFFSET = 10  # Since we use dots, it makes the text seem not centered other
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-
-MORSE_CODE_DICT = { 'A': '.-', 'B': '-...',
-                    'C': '-.-.', 'D': '-..', 'E': '.',
-                    'F': '..-.', 'G': '--.', 'H': '....',
-                    'I': '..', 'J': '.---', 'K': '-.-',
-                    'L': '.-..', 'M': '--', 'N': '-.',
-                    'O': '---', 'P': '.--.', 'Q': '--.-',
-                    'R': '.-.', 'S': '...', 'T': '-',
-                    'U': '..-', 'V': '...-', 'W': '.--',
-                    'X': '-..-', 'Y': '-.--', 'Z': '--..',
-                    '1': '.----', '2': '..---', '3': '...--',
-                    '4': '....-', '5': '.....', '6': '-....',
-                    '7': '--...', '8': '---..', '9': '----.',
-                    '0': '-----', ', ': '--..--', '.': '.-.-.-',
-                    '?': '..--..', '/': '-..-.', '-': '-....-',
-                    '(': '-.--.', ')': '-.--.-', '!': '-.-.--'}
-
-
-def textToMorse(message):
-    morse = ""
-
-    for letter in message:
-        if letter != ' ':
-            morse += MORSE_CODE_DICT.get(letter.upper(), "") + ' '
-        else:
-            morse += ' '
-    return morse
 
 
 def trim(image):
@@ -173,7 +147,7 @@ font = ImageFont.truetype("Arial.ttf", FONT_SIZE)
 draw.point([(0, 0), (PAPER_WIDTH - 1, 0)], BLACK)
 
 txt = "Lorem ipsum dolor sit amet consectetur adipiscing elit. Aenean ac mi sit amet nulla convallis aliquet."
-txt = "A short message, oh noes!"
+#txt = "A short message, oh noes!"
 
 parts = SentenceSplitter.findOptimalSplit(txt, 6)
 
@@ -182,7 +156,7 @@ font_center_x = PAPER_WIDTH / 2 + len(parts) * FONT_SIZE / 2 + (len(parts) - 1) 
 
 # Draw all the parts
 for i, part in enumerate(parts):
-    drawRotatedText(img, -90, (font_center_x - i * (FONT_SIZE + LINE_SPACING), 0), textToMorse(part), BLACK, font=font)
+    drawRotatedText(img, -90, (font_center_x - i * (FONT_SIZE + LINE_SPACING), 0), MorseTranslator.textToMorse(part), BLACK, font=font)
 
 # Trim the image so that it's length is correct.
 img = trim(img)
