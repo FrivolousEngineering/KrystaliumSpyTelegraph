@@ -141,7 +141,7 @@ def printFinal(img: str):
 img = Image.new("RGB", (PAPER_WIDTH, 5000), WHITE)
 
 draw = ImageDraw.Draw(img)
-font = ImageFont.truetype("Arial.ttf", FONT_SIZE)
+font = ImageFont.truetype("Assets/Arial.ttf", FONT_SIZE)
 
 # Draw two points in top left & right corner to prevent width from being trimmed ;)
 draw.point([(0, 0), (PAPER_WIDTH - 1, 0)], BLACK)
@@ -162,8 +162,8 @@ for i, part in enumerate(parts):
 img = trim(img)
 img = addMargin(img, TEXT_MARGIN, TEXT_MARGIN, TEXT_MARGIN, 0, WHITE)
 
-img = concatImageVertical(Image.open("FloralDivider.png"), img)
-img = concatImageVertical(img, Image.open("FloralDividerUpside.png"))
+img = concatImageVertical(Image.open("Assets/FloralDivider.png"), img)
+img = concatImageVertical(img, Image.open("Assets/FloralDividerUpside.png"))
 img.save("test.png")
 
 #printFinal("test.png")
