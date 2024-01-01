@@ -13,7 +13,11 @@ def getAllMessages(db: Session):
 def createMessage(db: Session, message: schemas.MessageCreate) -> models.Message:
     db_message = models.Message(**message.__dict__)
     db_message.time_message_sent = datetime.now()
-    db_message.message_morse = MorseTranslator.textToMorse(db_message.message_text)
+
+    if db_message.message_text:
+        db_message.message_morse = MorseTranslator.textToMorse(db_message.message_text)
+    else:
+        db_message.message_text = MorseTranslator.morseToText(db_message.message_morse)
 
     db.add(db_message)
     db.commit()

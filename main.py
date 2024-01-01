@@ -137,6 +137,8 @@ def printFinal(img: str):
     p.control("LF")
 
 
+
+
 # Create a white image
 img = Image.new("RGB", (PAPER_WIDTH, 5000), WHITE)
 
@@ -147,6 +149,7 @@ font = ImageFont.truetype("Assets/Arial.ttf", FONT_SIZE)
 draw.point([(0, 0), (PAPER_WIDTH - 1, 0)], BLACK)
 
 txt = "Lorem ipsum dolor sit amet consectetur adipiscing elit. Aenean ac mi sit amet nulla convallis aliquet."
+
 #txt = "A short message, oh noes!"
 
 parts = SentenceSplitter.findOptimalSplit(txt, 6)
