@@ -41,13 +41,9 @@ void loop() {
     {
       time_start_pauze = millis();
       decode(time_start_char);
-
-    noTone(buzzerPin);
-    analogWrite(buzzerPin, 255);
+      noTone(buzzerPin);
+      analogWrite(buzzerPin, 255);
     }
-    
-
-    //digitalWrite(BUZZER, LOW);
   }
 
   if (abs(millis() - time_start_pauze) > dash_duration * 10) 

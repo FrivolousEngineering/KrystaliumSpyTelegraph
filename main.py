@@ -7,6 +7,10 @@ from MorseTranslator import MorseTranslator
 from SentenceSplitter import SentenceSplitter
 
 PAPER_WIDTH = 384
+wide_paper_width = 384
+narrow_paper_width = 192
+NUM_LINES = 1  # How many lines of morse should be printed
+ADD_MESSAGE_END_END_START = False  # SHould a floral symbol be printed at start & front of a message?
 
 FONT_SIZE = 50
 LINE_SPACING = 20
@@ -148,11 +152,15 @@ font = ImageFont.truetype("Assets/Arial.ttf", FONT_SIZE)
 # Draw two points in top left & right corner to prevent width from being trimmed ;)
 draw.point([(0, 0), (PAPER_WIDTH - 1, 0)], BLACK)
 
-txt = "Lorem ipsum dolor sit amet consectetur adipiscing elit. Aenean ac mi sit amet nulla convallis aliquet."
+txt = "Lorem ipsum dolor sit amet consectetur adipiscing elit."
 
 #txt = "A short message, oh noes!"
 
-parts = SentenceSplitter.findOptimalSplit(txt, 6)
+if NUM_LINES > 1:
+    parts = SentenceSplitter.findOptimalSplit(txt, NUM_LINES)
+else:
+    parts = [txt]
+
 
 # Calculate the location of the top line and count down from there
 font_center_x = PAPER_WIDTH / 2 + len(parts) * FONT_SIZE / 2 + (len(parts) - 1) * LINE_SPACING * 0.5 + TEXT_OFFSET
@@ -165,6 +173,10 @@ for i, part in enumerate(parts):
 img = trim(img)
 img = addMargin(img, TEXT_MARGIN, TEXT_MARGIN, TEXT_MARGIN, 0, WHITE)
 
-img = concatImageVertical(Image.open("Assets/FloralDivider.png"), img)
-img = concatImageVertical(img, Image.open("Assets/FloralDividerUpside.png"))
+if ADD_MESSAGE_END_END_START:
+    img = concatImageVertical(Image.open("Assets/FloralDivider.png"), img)
+    img = concatImageVertical(img, Image.open("Assets/FloralDividerUpside.png"))
+
 img.save("test.png")
+
+#printFinal("test.png")
