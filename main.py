@@ -8,17 +8,29 @@ from SentenceSplitter import SentenceSplitter
 
 PAPER_WIDTH = 384
 wide_paper_width = 384
-narrow_paper_width = 192
-NUM_LINES = 1  # How many lines of morse should be printed
-ADD_MESSAGE_END_END_START = False  # SHould a floral symbol be printed at start & front of a message?
-
-FONT_SIZE = 50
-LINE_SPACING = 20
-TEXT_MARGIN = 20
-TEXT_OFFSET = 10  # Since we use dots, it makes the text seem not centered otherwise.
+narrow_paper_width = 194
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+
+
+class Config:
+
+    def __init__(self, text_alignment, font_size, line_spacing, text_margin, text_offset, num_lines, add_headers):
+        self.text_alignment: str = text_alignment
+
+        self.font_size = font_size
+        self.line_spacing = line_spacing
+        self.text_margin = text_margin
+        self.text_offset = text_offset  # Since we use dots, it makes the text seem not centered otherwise.
+        self.num_lines = num_lines
+        self.add_header = add_headers
+
+
+multi_line_config = Config("CENTER", 50, 20, 20, 10, 6, add_headers=True)
+single_line_config = Config("LEFT", 75, 20, 20, 20, 1, add_headers=False)
+
+active_configuration = single_line_config
 
 
 def trim(image):
@@ -147,36 +159,55 @@ def printFinal(img: str):
 img = Image.new("RGB", (PAPER_WIDTH, 5000), WHITE)
 
 draw = ImageDraw.Draw(img)
-font = ImageFont.truetype("Assets/Arial.ttf", FONT_SIZE)
+font = ImageFont.truetype("Assets/Arial.ttf", active_configuration.font_size)
 
 # Draw two points in top left & right corner to prevent width from being trimmed ;)
 draw.point([(0, 0), (PAPER_WIDTH - 1, 0)], BLACK)
 
 txt = "Lorem ipsum dolor sit amet consectetur adipiscing elit."
+txt = "HELLO"
 
 #txt = "A short message, oh noes!"
 
-if NUM_LINES > 1:
-    parts = SentenceSplitter.findOptimalSplit(txt, NUM_LINES)
+if active_configuration.num_lines > 1:
+    parts = SentenceSplitter.findOptimalSplit(txt, active_configuration.num_lines)
 else:
     parts = [txt]
 
 
-# Calculate the location of the top line and count down from there
-font_center_x = PAPER_WIDTH / 2 + len(parts) * FONT_SIZE / 2 + (len(parts) - 1) * LINE_SPACING * 0.5 + TEXT_OFFSET
+# The text size without spacing
+total_text_size = len(parts) * active_configuration.font_size
+# Now add the spacing (as we only add spacing between lines, we need to use 1 less than the num lines we have (as
+# there are 2 spacing between 3 lines and none if we have a single line)
+total_text_size += (len(parts) - 1) * active_configuration.line_spacing
 
-# Draw all the parts
-for i, part in enumerate(parts):
-    drawRotatedText(img, -90, (font_center_x - i * (FONT_SIZE + LINE_SPACING), 0), MorseTranslator.textToMorse(part), BLACK, font=font)
+
+print(total_text_size)
+
+if active_configuration.text_alignment == "CENTER":
+    # Calculate the location of the top line and count down from there
+    text_start_x = PAPER_WIDTH / 2 + total_text_size / 2 + active_configuration.text_offset
+    # Draw all the parts
+
+else:
+    # Right aligned
+    text_start_x = PAPER_WIDTH - (narrow_paper_width / 2 - total_text_size / 2 - active_configuration.text_offset)
+
+    for i, part in enumerate(parts):
+        drawRotatedText(img, -90, (text_start_x - i * (active_configuration.font_size + active_configuration.line_spacing), 0), MorseTranslator.textToMorse(part),
+                        BLACK, font=font)
+
 
 # Trim the image so that it's length is correct.
 img = trim(img)
-img = addMargin(img, TEXT_MARGIN, TEXT_MARGIN, TEXT_MARGIN, 0, WHITE)
-
-if ADD_MESSAGE_END_END_START:
+text_margin = active_configuration.text_margin
+if active_configuration.add_header:
+    img = addMargin(img, text_margin, text_margin, text_margin, 0, WHITE)
     img = concatImageVertical(Image.open("Assets/FloralDivider.png"), img)
     img = concatImageVertical(img, Image.open("Assets/FloralDividerUpside.png"))
+else:
+    img = addMargin(img, text_margin, 0, text_margin, 0, WHITE)
 
 img.save("test.png")
 
-#printFinal("test.png")
+printFinal("test.png")
