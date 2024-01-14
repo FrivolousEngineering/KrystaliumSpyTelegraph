@@ -24,6 +24,7 @@ class MessageCreate(MessageBase):
 class Message(MessageBase):
     id: int
     time_message_sent: datetime
+    time_message_printed: Optional[datetime]
 
 
 class BadRequestError(BaseModel):
