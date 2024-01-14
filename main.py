@@ -165,7 +165,7 @@ font = ImageFont.truetype("Assets/Arial.ttf", active_configuration.font_size)
 draw.point([(0, 0), (PAPER_WIDTH - 1, 0)], BLACK)
 
 txt = "Lorem ipsum dolor sit amet consectetur adipiscing elit."
-txt = "HELLO"
+txt = "The base has fallen. We do not know who the spy is. Proceed with caution. Trust noone. Death to the iron tzar."
 
 #txt = "A short message, oh noes!"
 
@@ -181,8 +181,6 @@ total_text_size = len(parts) * active_configuration.font_size
 # there are 2 spacing between 3 lines and none if we have a single line)
 total_text_size += (len(parts) - 1) * active_configuration.line_spacing
 
-
-print(total_text_size)
 
 if active_configuration.text_alignment == "CENTER":
     # Calculate the location of the top line and count down from there
