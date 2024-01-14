@@ -3,6 +3,8 @@ import logging
 import queue
 import sys
 import random
+import threading
+import requests
 
 from escpos import printer
 import contextlib
@@ -36,6 +38,9 @@ class PygameWrapper:
     MIN_CHAR_PAUSE = 16
     MAX_CHAR_PAUSE = 64
 
+    REQUEST_UPDATE_TIME = 2000 # 2 sec
+    MIN_TIME_BETWEEN_MESSAGES = 10000 # 10 seconds
+
     def __init__(self, fullscreen: bool = True):
         pygame.init()
         self._screen_width = 1280
@@ -47,6 +52,8 @@ class PygameWrapper:
         self._clock = pygame.time.Clock()
         self._running = False
 
+        self._base_server_url: str = "http://127.0.0.1:8000"
+
         self._click_short = pygame.mixer.Sound("click_short.mp3")
         self._click_long = pygame.mixer.Sound("click_long.mp3")
 
@@ -57,6 +64,54 @@ class PygameWrapper:
         self._start_playing_message = False
         self._morse_queue = queue.Queue()
         self._setupLogging()
+        self._request_message_to_be_printed_thread = None
+        self._request_message_pending = False
+        self._last_printed_message_id = None
+
+    def _requestMessageToBePrinted(self):
+        try:
+            self._request_message_to_be_printed_thread.join()
+        except:
+            pass
+        self._request_message_to_be_printed_thread = threading.Thread(target = self._doServerRequest)
+        self._request_message_to_be_printed_thread.start()
+
+    def _doServerRequest(self):
+        try:
+            r = requests.get(f"{self._base_server_url}/unprinted_messages/")
+        except requests.exceptions.ConnectionError:
+            logging.error("Failed to connect to the server")
+            self._request_message_pending = False
+            return
+        if r.status_code == 200:
+            data = r.json()
+
+            if data:
+                for char in data[0]["message_morse"]:
+                    self._morse_queue.put(char)
+                self._last_printed_message_id = data[0]["id"]
+                # Create the image to print and store it
+                image = MorseImageCreator.createImage(data[0]["message_text"], single_line_config)
+                image.save(f"{self._last_printed_message_id}.png")
+                self._start_playing_message = True
+            else:
+                self._request_message_pending = False
+        else:
+            self._request_message_pending = False
+
+    @staticmethod
+    def printFinal(img: str):
+        # Setup the printer stuff
+        p = printer.Usb(0x28e9, 0x0289, out_ep=0x03, profile="ZJ-5870")
+
+        p.image(img)
+
+        # Move the paper a bit so that we have some whitespace to tear it off
+        p.control("LF")
+        p.control("LF")
+        p.control("LF")
+        p.control("LF")
+
 
     @staticmethod
     def _setupLogging() -> None:
@@ -78,17 +133,35 @@ class PygameWrapper:
         self._running = True
         while self._running:
             if self._start_playing_message:  # Flag that we flip if we want to start the sounds
+
+                # Print the message (although we might want to start that when we get the message tho?
+                self.printFinal(f"{self._last_printed_message_id}.png")
+
                 pygame.event.post(pygame.event.Event(sound_completed_event))
                 self._start_playing_message = False
-            for event in pygame.event.get():
 
+            if not self._request_message_pending:  # Request update from server
+                logging.info("Requesting new message")
+                pygame.time.set_timer(request_update_server_event, self.REQUEST_UPDATE_TIME, 1)
+                self._request_message_pending = True
+
+            for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self._running = False
                     break
 
                 if event.type == sound_completed_event:  # The sound that was running has completed.
                     if not self._morse_queue.queue:
-                        print("Queue is empty")
+                        logging.info("Queue is empty")
+
+
+
+                        # Notify the server that the message has been printed
+                        requests.post(f"{self._base_server_url}/messages/{self._last_printed_message_id}/mark_as_printed")
+
+                        # Only start requesting new messages again after a certain time.
+                        # This will ensure that messages don't get mushed together.
+                        pygame.time.set_timer(request_update_server_event, self.MIN_TIME_BETWEEN_MESSAGES, 1)
                         continue
                     if self._morse_queue.queue[0] == " ":
                         pygame.time.set_timer(pause_between_tick_event,
@@ -110,19 +183,10 @@ class PygameWrapper:
                         self._channel1.play(self._click_long)
                     else:
                         self._channel1.play(self._click_short)
+                elif event.type == request_update_server_event:
+                    self._requestMessageToBePrinted()
 
 
-def printFinal(img: str):
-    # Setup the printer stuff
-    p = printer.Usb(0x28e9, 0x0289, out_ep=0x03, profile="ZJ-5870")
-
-    p.image(img)
-
-    # Move the paper a bit so that we have some whitespace to tear it off
-    p.control("LF")
-    p.control("LF")
-    p.control("LF")
-    p.control("LF")
 
 
 # txt = "A short message, oh noes!"

@@ -4,3 +4,4 @@ sqlalchemy
 fastapi
 pygame
 uvicorn
+requests

@@ -48,7 +48,7 @@ def reprint_message(message_id: int, db: Session = Depends(get_db)):
     crud.reprintMessage(message_id, db)
 
 
-@app.post("/message/{message_id}/mark_as_printed",
+@app.post("/messages/{message_id}/mark_as_printed",
           responses={400: {"model": schemas.BadRequestError}, 404: {"model": schemas.NotFoundError}})
 def mark_message_as_printed(message_id: int, db: Session = Depends(get_db)):
     db_message = crud.getMessageById(message_id, db)
