@@ -3,6 +3,7 @@ from escpos import printer
 
 from PIL import Image, ImageDraw, ImageChops, ImageFont, ImageOps
 
+from Config import Config
 from MorseTranslator import MorseTranslator
 from SentenceSplitter import SentenceSplitter
 
@@ -12,19 +13,6 @@ narrow_paper_width = 194
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-
-
-class Config:
-
-    def __init__(self, text_alignment, font_size, line_spacing, text_margin, text_offset, num_lines, add_headers):
-        self.text_alignment: str = text_alignment
-
-        self.font_size = font_size
-        self.line_spacing = line_spacing
-        self.text_margin = text_margin
-        self.text_offset = text_offset  # Since we use dots, it makes the text seem not centered otherwise.
-        self.num_lines = num_lines
-        self.add_header = add_headers
 
 
 multi_line_config = Config("CENTER", 50, 20, 20, 10, 6, add_headers=True)
