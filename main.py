@@ -36,52 +36,6 @@ def addMargin(image, top, right, bottom, left, color):
     return result
 
 
-def custom_split(input_string, max_splits):
-    words = input_string.split()
-    result = []
-    max_letters_per_split = len(input_string) // max_splits
-    while len(words) > 0 and len(result) < max_splits - 1:
-        current_split = words.pop(0)
-        while len(words) > 0 and len(current_split) + len(words[0]) + 1 <= max_letters_per_split:
-            current_split += " " + words.pop(0)
-
-        result.append(current_split)
-
-    if len(words) > 0:
-        result.append(" ".join(words))
-
-    return result
-
-
-def cutStringIntoParts(input_string, num_parts):
-    words = input_string.split()
-    total_words = len(words)
-
-    # Calculate the number of words in each part and the remaining words
-    words_per_part = total_words // num_parts
-    remaining_words = total_words % num_parts
-
-    # Initialize a list to store the parts
-    parts = []
-
-    # Iterate through each part
-    start_index = 0
-    for i in range(num_parts):
-        # Calculate the end index for the current part
-        end_index = start_index + words_per_part + (1 if i < remaining_words else 0)
-
-        # Extract the current part and join the words
-        current_part = ' '.join(words[start_index:end_index])
-
-        # Add the current part to the list
-        parts.append(current_part)
-
-        # Update the start index for the next part
-        start_index = end_index
-
-    return parts
-
-
 def concatImageVertical(im1, im2):
     dst = Image.new('RGB', (im1.width, im1.height + im2.height))
     dst.paste(im1, (0, 0))
@@ -139,8 +93,6 @@ def printFinal(img: str):
     p.control("LF")
     p.control("LF")
     p.control("LF")
-
-
 
 
 # Create a white image
