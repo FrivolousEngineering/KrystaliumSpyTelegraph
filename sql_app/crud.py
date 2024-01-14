@@ -1,3 +1,5 @@
+from typing import Optional, List
+
 from sqlalchemy.orm import Session
 
 from MorseTranslator import MorseTranslator
@@ -10,8 +12,24 @@ def getAllMessages(db: Session):
     return db.query(models.Message).all()
 
 
-def getAllUnprintedMessages(db: Session):
+def getMessageById(message_id: int, db: Session) -> Optional[models.Message]:
+    return db.query(models.Message).filter(models.Message.id == message_id).first()
+
+
+def getAllUnprintedMessages(db: Session) -> List[models.Message]:
     return db.query(models.Message).filter(models.Message.time_message_printed == None)
+
+
+def reprintMessage(message_id: int, db: Session):
+    db_message = getMessageById(message_id, db)
+    db_message.time_message_printed = None
+    db.commit()
+
+
+def markMessageAsPrinted(message_id: int, db: Session):
+    db_message = getMessageById(message_id, db)
+    db_message.time_message_printed = datetime.now()
+    db.commit()
 
 
 def createMessage(db: Session, message: schemas.MessageCreate) -> models.Message:

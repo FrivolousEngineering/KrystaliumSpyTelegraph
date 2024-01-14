@@ -28,4 +28,8 @@ class Message(MessageBase):
 
 
 class BadRequestError(BaseModel):
-    error_message: str
+    detail: str
+
+
+class NotFoundError(BaseModel):
+    detail: str
