@@ -10,6 +10,10 @@ def getAllMessages(db: Session):
     return db.query(models.Message).all()
 
 
+def getAllUnprintedMessages(db: Session):
+    return db.query(models.Message).filter(models.Message.time_message_printed == None)
+
+
 def createMessage(db: Session, message: schemas.MessageCreate) -> models.Message:
     db_message = models.Message(**message.__dict__)
     db_message.time_message_sent = datetime.now()
