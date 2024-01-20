@@ -95,7 +95,7 @@ class PygameWrapper:
 
     def _doServerRequest(self):
         try:
-            r = requests.get(f"{self._base_server_url}/unprinted_messages/")
+            r = requests.get(f"{self._base_server_url}/messages/unprinted/")
         except requests.exceptions.ConnectionError:
             logging.error("Failed to connect to the server")
             self._request_message_pending = False
