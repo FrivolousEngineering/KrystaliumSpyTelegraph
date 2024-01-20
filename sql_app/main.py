@@ -102,9 +102,6 @@ def mark_message_as_printed(message_id: int, db: Session = Depends(get_db)):
     crud.markMessageAsPrinted(message_id, db)
 
 
-
-
-
 @app.post("/messages/", response_model=schemas.Message, responses={400: {"model": schemas.BadRequestError}})
 def postMessage(message: schemas.MessageCreate, db: Session = Depends(get_db)):
     if message.message_morse is not None and message.message_text is not None:
