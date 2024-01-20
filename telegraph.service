@@ -5,6 +5,7 @@ After=sound.target
 Type = simple
 Environment="DISPLAY=:0"
 Environment="XAUTHORITY=/home/jaime/.Xauthority"
+Environment=XDG_RUNTIME_DIR=/run/user/1000
 WorkingDirectory=/home/jaime/Development/KrystaliumSpyTelegraph
 ExecStart = /home/jaime/Development/KrystaliumSpyTelegraph/venv/bin/python3 main.py
 Restart = always
