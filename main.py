@@ -188,6 +188,8 @@ class PygameWrapper:
                             self._typed_text = self._typed_text[:-1]
                     elif event.key == pygame.K_RETURN:
                         logging.info(f"Attempting to send the message: {self._typed_text}")
+                        r = requests.post(f"{self._base_server_url}/messages/", json = {"message_text": self._typed_text, "message_direction": "Outgoing"})
+                        logging.info(f"Sent message with status code {r.status_code}")
                         # TODO: Actually send the message
                         self._request_message_pending = False
                         self._typed_text = ""
@@ -252,7 +254,7 @@ class PygameWrapper:
                         # Set an event to try again after some time
                         pygame.time.set_timer(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME, 1)
 
-                elif event.type == request_update_server_event and self._typed_text != "":
+                elif event.type == request_update_server_event:
                     self._requestMessageToBePrinted()
                 elif event.type == message_typing_timeout_event:
                     logging.info("Typing timeout.")
