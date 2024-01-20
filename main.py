@@ -30,6 +30,7 @@ sound_completed_event = pygame.USEREVENT + 1
 pause_between_tick_event = pygame.USEREVENT + 2
 request_update_server_event = pygame.USEREVENT + 3
 retry_printer_not_found_event = pygame.USEREVENT + 4
+message_typing_timeout_event = pygame.USEREVENT + 5
 
 multi_line_config = Config("CENTER", 50, 20, 20, 10, 6, add_headers=True)
 single_line_config = Config("LEFT", 75, 20, 0, 20, 1, add_headers=False)
@@ -42,9 +43,10 @@ class PygameWrapper:
     MIN_CHAR_PAUSE = 1
     MAX_CHAR_PAUSE = 1
 
-    REQUEST_UPDATE_TIME = 2000 # 2 sec
-    MIN_TIME_BETWEEN_MESSAGES = 10000 # 10 seconds
-    RETRY_PRINTER_NOT_FOUND_TIME = 2000 # 2 seconds
+    REQUEST_UPDATE_TIME = 2000  # 2 sec
+    MIN_TIME_BETWEEN_MESSAGES = 10000  # 10 seconds
+    RETRY_PRINTER_NOT_FOUND_TIME = 2000  # 2 seconds
+    MESSAGE_TYPING_TIMEOUT_TIME = 30000  # 30 secs
 
     def __init__(self, fullscreen: bool = True):
         pygame.init()
@@ -74,6 +76,8 @@ class PygameWrapper:
         self._request_message_to_be_printed_thread = None
         self._request_message_pending = False
         self._last_printed_message_id = None
+
+        self._typed_text = ""  # The text that is localy typed
 
         self._printer = self.createPrinter()
 
@@ -171,6 +175,25 @@ class PygameWrapper:
                 self._request_message_pending = True
 
             for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    # Stop requesting new messages. Players are typing
+                    pygame.time.set_timer(request_update_server_event, 0)
+
+                    # Start a clearing timer (otherwise if someone accidentally touches the keyboard, the entire
+                    # thing stops working. By continiously resetting the timer every time a key is pressed this
+                    # works as a "x seconds after last activity" timeout.
+                    pygame.time.set_timer(message_typing_timeout_event, self.MESSAGE_TYPING_TIMEOUT_TIME, 1)
+                    if event.key == pygame.K_BACKSPACE:
+                        if len(self._typed_text) > 0:
+                            self._typed_text = self._typed_text[:-1]
+                    elif event.key == pygame.K_RETURN:
+                        logging.info(f"Attempting to send the message: {self._typed_text}")
+                        # TODO: Actually send the message
+                        self._request_message_pending = False
+                        self._typed_text = ""
+                    else:
+                        self._typed_text += event.unicode
+
                 if event.type == pygame.QUIT:
                     self._running = False
                     break
@@ -229,8 +252,12 @@ class PygameWrapper:
                         # Set an event to try again after some time
                         pygame.time.set_timer(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME, 1)
 
-                elif event.type == request_update_server_event:
+                elif event.type == request_update_server_event and self._typed_text != "":
                     self._requestMessageToBePrinted()
+                elif event.type == message_typing_timeout_event:
+                    logging.info("Typing timeout.")
+                    self._typed_text = ""
+                    self._request_message_pending = False
 
 
 
