@@ -239,12 +239,12 @@ class PygameWrapper:
                             failed_to_print = True
 
                     if char_to_play == "-":
-                        if self.printImage("dash2.png"):
+                        if self.printImage("dash.png"):
                             self._channel1.play(self._click_long)
                         else:
                             failed_to_print = True
                     else:
-                        if self.printImage("dot2.png"):
+                        if self.printImage("dot.png"):
                             self._channel1.play(self._click_short)
                         else:
                             failed_to_print = True
