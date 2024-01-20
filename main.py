@@ -9,6 +9,9 @@ import requests
 from escpos import printer
 import contextlib
 
+from escpos.exceptions import DeviceNotFoundError
+from usb.core import USBError
+
 with contextlib.redirect_stdout(None):
     import pygame
 
@@ -26,20 +29,22 @@ DARK_BLUE = (3, 5, 54)
 sound_completed_event = pygame.USEREVENT + 1
 pause_between_tick_event = pygame.USEREVENT + 2
 request_update_server_event = pygame.USEREVENT + 3
+retry_printer_not_found_event = pygame.USEREVENT + 4
 
 multi_line_config = Config("CENTER", 50, 20, 20, 10, 6, add_headers=True)
-single_line_config = Config("LEFT", 75, 20, 20, 20, 1, add_headers=False)
+single_line_config = Config("LEFT", 75, 20, 0, 20, 1, add_headers=False)
 
 
 class PygameWrapper:
     MIN_SPACE_PAUSE = 400
     MAX_SPACE_PAUSE = 500
 
-    MIN_CHAR_PAUSE = 16
-    MAX_CHAR_PAUSE = 64
+    MIN_CHAR_PAUSE = 1
+    MAX_CHAR_PAUSE = 1
 
     REQUEST_UPDATE_TIME = 2000 # 2 sec
     MIN_TIME_BETWEEN_MESSAGES = 10000 # 10 seconds
+    RETRY_PRINTER_NOT_FOUND_TIME = 2000 # 2 seconds
 
     def __init__(self, fullscreen: bool = True):
         pygame.init()
@@ -67,6 +72,12 @@ class PygameWrapper:
         self._request_message_to_be_printed_thread = None
         self._request_message_pending = False
         self._last_printed_message_id = None
+
+        self._printer = self.createPrinter()
+
+    @staticmethod
+    def createPrinter():
+        return printer.Usb(0x28e9, 0x0289, out_ep=0x03, profile="ZJ-5870")
 
     def _requestMessageToBePrinted(self):
         try:
@@ -99,19 +110,35 @@ class PygameWrapper:
         else:
             self._request_message_pending = False
 
-    @staticmethod
-    def printFinal(img: str):
-        # Setup the printer stuff
-        p = printer.Usb(0x28e9, 0x0289, out_ep=0x03, profile="ZJ-5870")
+    def printImage(self, img: str) -> bool:
+        try:
+            self._printer.image(img)
+            return True
+        except (DeviceNotFoundError, USBError):
+            logging.warning("printer not found")
+            self._printer = self.createPrinter()
+            return False
 
-        p.image(img)
-
+    def feedPaper(self) -> bool:
         # Move the paper a bit so that we have some whitespace to tear it off
-        p.control("LF")
-        p.control("LF")
-        p.control("LF")
-        p.control("LF")
+        try:
+            self._printer.control("LF")
+            self._printer.control("LF")
+            self._printer.control("LF")
+            self._printer.control("LF")
+            return True
+        except (DeviceNotFoundError, USBError):
+            self._printer = self.createPrinter()
+            return False
 
+    def printSpace(self):
+        try:
+            self._printer.control("LF")
+            return True
+        except (DeviceNotFoundError, USBError):
+            logging.warning("printer not found")
+            self._printer = self.createPrinter()
+            return False
 
     @staticmethod
     def _setupLogging() -> None:
@@ -133,10 +160,6 @@ class PygameWrapper:
         self._running = True
         while self._running:
             if self._start_playing_message:  # Flag that we flip if we want to start the sounds
-
-                # Print the message (although we might want to start that when we get the message tho?
-                self.printFinal(f"{self._last_printed_message_id}.png")
-
                 pygame.event.post(pygame.event.Event(sound_completed_event))
                 self._start_playing_message = False
 
@@ -150,18 +173,21 @@ class PygameWrapper:
                     self._running = False
                     break
 
-                if event.type == sound_completed_event:  # The sound that was running has completed.
+                if event.type == sound_completed_event or event.type == retry_printer_not_found_event:
+                    # The sound that was running has completed or the timeout for failure was hit.
                     if not self._morse_queue.queue:
                         logging.info("Queue is empty")
 
+                        if self.feedPaper():
+                            # Notify the server that the message has been printed
+                            requests.post(f"{self._base_server_url}/messages/{self._last_printed_message_id}/mark_as_printed")
 
-
-                        # Notify the server that the message has been printed
-                        requests.post(f"{self._base_server_url}/messages/{self._last_printed_message_id}/mark_as_printed")
-
-                        # Only start requesting new messages again after a certain time.
-                        # This will ensure that messages don't get mushed together.
-                        pygame.time.set_timer(request_update_server_event, self.MIN_TIME_BETWEEN_MESSAGES, 1)
+                            # Only start requesting new messages again after a certain time.
+                            # This will ensure that messages don't get mushed together.
+                            pygame.time.set_timer(request_update_server_event, self.MIN_TIME_BETWEEN_MESSAGES, 1)
+                        else:
+                            # Set an event to try again after some time
+                            pygame.time.set_timer(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME, 1)
                         continue
                     if self._morse_queue.queue[0] == " ":
                         pygame.time.set_timer(pause_between_tick_event,
@@ -175,14 +201,32 @@ class PygameWrapper:
                 elif event.type == pause_between_tick_event:
                     # Pause was completed, play the next sound!
                     char_to_play = self._morse_queue.get()
+                    failed_to_print = False
                     if char_to_play == " ":
-                        # Post a "fake" sound completed event, this will trigger the next sound to be played.
-                        pygame.event.post(pygame.event.Event(sound_completed_event))
-                        continue  # We already did the pause, move on!
+                        # Print the message (although we might want to start that when we get the message tho?
+                        if self.printSpace():
+                            # Post a "fake" sound completed event, this will trigger the next sound to be played.
+                            pygame.event.post(pygame.event.Event(sound_completed_event))
+                            continue  # We already did the pause, move on!
+                        else:
+                            failed_to_print = True
+
                     if char_to_play == "-":
-                        self._channel1.play(self._click_long)
+                        if self.printImage("dash2.png"):
+                            self._channel1.play(self._click_long)
+                        else:
+                            failed_to_print = True
                     else:
-                        self._channel1.play(self._click_short)
+                        if self.printImage("dot2.png"):
+                            self._channel1.play(self._click_short)
+                        else:
+                            failed_to_print = True
+
+                    if failed_to_print:
+                        self._morse_queue.queue.insert(0, char_to_play)
+                        # Set an event to try again after some time
+                        pygame.time.set_timer(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME, 1)
+
                 elif event.type == request_update_server_event:
                     self._requestMessageToBePrinted()
 
@@ -198,6 +242,7 @@ class PygameWrapper:
 
 
 # printFinal("test.png")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
