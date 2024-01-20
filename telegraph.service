@@ -1,0 +1,15 @@
+[Service]
+Type = simple
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/jaime/.Xauthority"
+WorkingDirectory=/home/jaime/Development/KrystaliumSpyTelegraph
+ExecStart = /home/jaime/Development/KrystaliumSpyTelegraph/venv/bin/python3 main.py
+Restart = always
+RestartSec = 5
+KillMode = process
+SendSIGHUP = no
+User=jaime
+
+[Install]
+WantedBy= graphical.target
+

@@ -1,0 +1,15 @@
+[Unit]
+Description=TelegraphDatabase
+After=network.target
+
+[Service]
+Type=simple
+User=jaime
+WorkingDirectory=/home/jaime/Development/KrystaliumSpyTelegraph/
+ExecStart=uvicorn sql_app.main:app --host 0.0.0.0
+ExecReload=/bin/kill -HUP ${MAINPID}
+RestartSec=1
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
