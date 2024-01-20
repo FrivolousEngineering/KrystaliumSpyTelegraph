@@ -1,9 +1,11 @@
 import argparse
 import logging
-import queue
+from queue import Queue
 import sys
 import random
 import threading
+from typing import Optional
+
 import requests
 
 from escpos import printer
@@ -71,9 +73,9 @@ class PygameWrapper:
         self._channel1.set_endevent(sound_completed_event)
 
         self._start_playing_message = False
-        self._morse_queue = queue.Queue()
+        self._morse_queue: Queue = Queue()
         self._setupLogging()
-        self._request_message_to_be_printed_thread = None
+        self._request_message_to_be_printed_thread: Optional[threading.Thread] = None
         self._request_message_pending = False
         self._last_printed_message_id = None
 
@@ -87,7 +89,8 @@ class PygameWrapper:
 
     def _requestMessageToBePrinted(self) -> None:
         try:
-            self._request_message_to_be_printed_thread.join()
+            if self._request_message_to_be_printed_thread is not None:
+                self._request_message_to_be_printed_thread.join()
         except Exception:
             pass
         self._request_message_to_be_printed_thread = threading.Thread(target = self._doServerRequest)
