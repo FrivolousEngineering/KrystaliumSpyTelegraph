@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Tuple
 
 
 class SentenceSplitter:
@@ -50,9 +50,9 @@ class SentenceSplitter:
         return filtered_parts[longest_min_length_indicies[0]]
 
     @staticmethod
-    def _wrapMinWidth(words: List[str], n):
-        r = []
-        l = ""
+    def _wrapMinWidth(words: List[str], n: int) -> List[str]:
+        r: List[str] = []
+        l: str = ""
         for word in words:
             if len(word) + len(l) > n:
                 r = r + [l]
@@ -66,7 +66,7 @@ class SentenceSplitter:
         words = text.split(" ")
         hi, lo = sum([len(w) for w in words]), min([len(w) for w in words])
         while lo < hi:
-            mid = lo + (hi - lo) / 2
+            mid = int(lo + (hi - lo) / 2)
             v = SentenceSplitter._wrapMinWidth(words, mid)
             if len(v) > num_lines:
                 lo = mid + 1
@@ -84,36 +84,35 @@ class SentenceSplitter:
         total_width = cumulative_word_width[-1] + len(words) - 1  # len(words) - 1 spaces
         line_width = float(total_width - (num_lines - 1)) / float(num_lines)  # n - 1 line breaks
 
-        def cost(i, j):
+        def cost(i: int, j: int) -> float:
             """
             cost of a line words[i], ..., words[j - 1] (words[i:j])
             """
             actual_line_width = max(j - i - 1, 0) + (cumulative_word_width[j] - cumulative_word_width[i])
             return (line_width - actual_line_width) ** P
 
-        total_costs = {}  # Total cost function
+        total_costs: Dict[int, List[Tuple[float, int]]] = {}  # Total cost function
 
         for stage in range(num_lines):
             if stage == 0:
                 total_costs[stage] = []
                 i = 0
                 for j in range(i, len(words) + 1):
-                    total_costs[stage].append([cost(i, j), 0])
+                    total_costs[stage].append((cost(i, j), 0))
             elif stage == num_lines - 1:
-                total_costs[stage] = [[float('inf'), 0] for i in range(len(words) + 1)]
+                total_costs[stage] = [(float('inf'), 0) for i in range(len(words) + 1)]
                 for i in range(len(words) + 1):
                     j = len(words)
                     if total_costs[stage - 1][i][0] + cost(i, j) < total_costs[stage][j][0]:  # calculating min cost (cf f formula)
-                        total_costs[stage][j][0] = total_costs[stage - 1][i][0] + cost(i, j)
-                        total_costs[stage][j][1] = i
+                        total_costs[stage][j] = (total_costs[stage - 1][i][0] + cost(i, j), 1)
+
 
             else:
-                total_costs[stage] = [[float('inf'), 0] for i in range(len(words) + 1)]
+                total_costs[stage] = [(float('inf'), 0) for i in range(len(words) + 1)]
                 for i in range(len(words) + 1):
                     for j in range(i, len(words) + 1):
                         if total_costs[stage - 1][i][0] + cost(i, j) < total_costs[stage][j][0]:
-                            total_costs[stage][j][0] = total_costs[stage - 1][i][0] + cost(i, j)
-                            total_costs[stage][j][1] = i
+                            total_costs[stage][j] = (total_costs[stage - 1][i][0] + cost(i, j), i)
         result = []
         a = len(words)
         for k in range(num_lines - 1, 0, -1):  # reverse loop from n-1 to 1
