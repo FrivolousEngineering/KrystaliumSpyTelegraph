@@ -60,7 +60,7 @@ class PygameWrapper:
         self._running = False
 
         self._base_server_url: str = "http://127.0.0.1:8000"
-
+        pygame.mixer.init()
         self._click_short = pygame.mixer.Sound("click_short.mp3")
         self._click_long = pygame.mixer.Sound("click_long.mp3")
         self._final_bell = pygame.mixer.Sound("final_bell.mp3")

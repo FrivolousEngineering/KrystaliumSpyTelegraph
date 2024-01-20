@@ -1,3 +1,6 @@
+[Unit]
+After=sound.target
+
 [Service]
 Type = simple
 Environment="DISPLAY=:0"
