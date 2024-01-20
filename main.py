@@ -61,8 +61,10 @@ class PygameWrapper:
 
         self._click_short = pygame.mixer.Sound("click_short.mp3")
         self._click_long = pygame.mixer.Sound("click_long.mp3")
+        self._final_bell = pygame.mixer.Sound("final_bell.mp3")
 
-        self._channel1 = pygame.mixer.Channel(0)  # argument must be int
+        self._channel1 = pygame.mixer.Channel(0)
+        self._channel2 = pygame.mixer.Channel(1)  # Used for the final bell, as we don't want a sound complete event
 
         self._channel1.set_endevent(sound_completed_event)
 
@@ -181,7 +183,7 @@ class PygameWrapper:
                         if self.feedPaper():
                             # Notify the server that the message has been printed
                             requests.post(f"{self._base_server_url}/messages/{self._last_printed_message_id}/mark_as_printed")
-
+                            self._channel2.play(self._final_bell)
                             # Only start requesting new messages again after a certain time.
                             # This will ensure that messages don't get mushed together.
                             pygame.time.set_timer(request_update_server_event, self.MIN_TIME_BETWEEN_MESSAGES, 1)
