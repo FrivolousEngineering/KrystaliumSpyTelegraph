@@ -48,7 +48,7 @@ class PygameWrapper:
     RETRY_PRINTER_NOT_FOUND_TIME = 2000  # 2 seconds
     MESSAGE_TYPING_TIMEOUT_TIME = 30000  # 30 secs
 
-    def __init__(self, fullscreen: bool = True):
+    def __init__(self, fullscreen: bool = True) -> None:
         pygame.init()
         self._screen_width = 1280
         self._screen_height = 720
@@ -82,18 +82,18 @@ class PygameWrapper:
         self._printer = self.createPrinter()
 
     @staticmethod
-    def createPrinter():
+    def createPrinter() -> printer.Usb:
         return printer.Usb(0x28e9, 0x0289, out_ep=0x03, profile="ZJ-5870")
 
-    def _requestMessageToBePrinted(self):
+    def _requestMessageToBePrinted(self) -> None:
         try:
             self._request_message_to_be_printed_thread.join()
-        except:
+        except Exception:
             pass
         self._request_message_to_be_printed_thread = threading.Thread(target = self._doServerRequest)
         self._request_message_to_be_printed_thread.start()
 
-    def _doServerRequest(self):
+    def _doServerRequest(self) -> None:
         try:
             r = requests.get(f"{self._base_server_url}/messages/unprinted/")
         except requests.exceptions.ConnectionError:
@@ -137,7 +137,7 @@ class PygameWrapper:
             self._printer = self.createPrinter()
             return False
 
-    def printSpace(self):
+    def printSpace(self) -> bool:
         try:
             self._printer.control("LF")
             return True
@@ -161,7 +161,7 @@ class PygameWrapper:
         handler.setFormatter(formatter)
         root.addHandler(handler)
 
-    def run(self):
+    def run(self) -> None:
         logging.info("Display has started")
         self._running = True
         while self._running:
@@ -262,24 +262,11 @@ class PygameWrapper:
                     self._request_message_pending = False
 
 
-
-
-# txt = "A short message, oh noes!"
-
-
-#img = MorseImageCreator.createImage(txt, single_line_config)
-
-#img.save("test.png")
-
-
-# printFinal("test.png")
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-w", "--windowed", action="store_true")
 
     args = parser.parse_args()
-    wrapper = PygameWrapper(fullscreen = not args.windowed)
+    wrapper = PygameWrapper(fullscreen=not args.windowed)
 
     wrapper.run()
