@@ -66,23 +66,38 @@ CRGBPalette16 currentPalette;
 
 DEFINE_GRADIENT_PALETTE( gradient ) {
 0, 0, 0, 255, // blue
-240, 15, 0, 255 //slightly purple
+240, 15, 0, 255, //slightly purple
 255, 30, 0, 255 //slightly purple
 };
 
+
+const byte numChars = 32;
+char receivedChars[numChars];
+
+// variables to hold the parsed data
+char command_type_sent[numChars] = {0};
+int command_value = 0;
+float floatFromPC = 0.0;
+
+boolean newData = false;
+
 void setup() { 
-   FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-   FastLED.clear(); 
+  FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  FastLED.clear(); 
 
-
-   active_led = 1; // No led is active
+  active_led = 1; // No led is active
   currentPalette = gradient;
-   Serial.begin(9600);  
-
+  Serial.begin(115200);
 }
 
 
 void loop() { 
+  recvWithStartEndMarkers();
+  if (newData == true) {
+    parseData();
+    newData = false;
+  }
+  
   random16_add_entropy( random());
   FastLED.clear();
   handleLedFlickerBrightness(); 
@@ -91,6 +106,52 @@ void loop() {
 
   FastLED.show(); // display this frame
   FastLED.delay(1000 / FRAMES_PER_SECOND);
+}
+
+void recvWithStartEndMarkers() {
+  static byte ndx = 0;
+  char rc;
+
+  while (Serial.available() > 0 && newData == false) 
+  {
+    rc = Serial.read();
+
+    if(rc != '\r' && rc != '\n') // Endline indicates end of command
+    {
+      receivedChars[ndx] = rc;
+      ndx++;
+      if (ndx >= numChars) 
+      {
+        ndx = numChars - 1;
+      }
+    }
+    else 
+    {
+      receivedChars[ndx] = '\0'; // terminate the string
+      ndx = 0;
+      newData = true;
+    } 
+  }
+}
+
+
+void parseData() {      // split the data into its parts
+  char * strtokIndx; // this is used by strtok() as an index
+
+  strtokIndx = strtok(receivedChars, " ");      // Get the command type
+
+  String command(strtokIndx);
+
+  strtokIndx = strtok(NULL, " "); // this continues where the previous call left off
+  command_value = atoi(strtokIndx);     // convert this part to an integer
+
+  if(command == "light")
+  {
+    Serial.print("Setting active light to: ");
+    Serial.println(command_value);
+    active_led = command_value;
+  }
+
 }
 
 void handleFlickerColor()
@@ -109,7 +170,6 @@ void handleFlickerColor()
     heat = qadd8( heat, random8(160, 255) );
   }
 
-  Serial.println(colorindex);
   leds[active_led] = ColorFromPalette( currentPalette, colorindex);
   
 }
