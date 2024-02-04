@@ -52,7 +52,7 @@
 
 CRGB leds[NUM_LEDS];
 
-int active_led = 0;
+int active_led = -1;
 
 
 byte state;
