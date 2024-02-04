@@ -17,29 +17,29 @@ def getMessageById(message_id: int, db: Session) -> Optional[models.Message]:
 
 
 def getAllUnprintedMessages(db: Session) -> List[models.Message]:
-    return db.query(models.Message).filter(models.Message.time_message_printed == None)
+    return db.query(models.Message).filter(models.Message.time_printed == None)
 
 
 def reprintMessage(message_id: int, db: Session):
     db_message = getMessageById(message_id, db)
-    db_message.time_message_printed = None
+    db_message.time_printed = None
     db.commit()
 
 
 def markMessageAsPrinted(message_id: int, db: Session):
     db_message = getMessageById(message_id, db)
-    db_message.time_message_printed = datetime.now()
+    db_message.time_printed = datetime.now()
     db.commit()
 
 
 def createMessage(db: Session, message: schemas.MessageCreate) -> models.Message:
     db_message = models.Message(**message.__dict__)
-    db_message.time_message_sent = datetime.now()
+    db_message.time_sent = datetime.now()
 
-    if db_message.message_text:
-        db_message.message_morse = MorseTranslator.textToMorse(db_message.message_text)
+    if db_message.text:
+        db_message.morse = MorseTranslator.textToMorse(db_message.text)
     else:
-        db_message.message_text = MorseTranslator.morseToText(db_message.message_morse)
+        db_message.text = MorseTranslator.morseToText(db_message.morse)
 
     db.add(db_message)
     db.commit()

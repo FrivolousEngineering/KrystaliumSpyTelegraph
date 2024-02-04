@@ -111,11 +111,11 @@ class PygameWrapper:
             data = r.json()
 
             if data:
-                for char in data[0]["message_morse"]:
+                for char in data[0]["morse"]:
                     self._morse_queue.put(char)
                 self._last_printed_message_id = data[0]["id"]
                 # Create the image to print and store it
-                image = MorseImageCreator.createImage(data[0]["message_text"], single_line_config)
+                image = MorseImageCreator.createImage(data[0]["text"], single_line_config)
                 image.save(f"{self._last_printed_message_id}.png")
                 self._start_playing_message = True
             else:

@@ -11,20 +11,20 @@ class Direction(str, Enum):
 
 
 class MessageBase(BaseModel):
-    message_text: str
-    message_morse: str
-    message_direction: Direction
+    text: str
+    morse: str
+    direction: Direction
 
 
 class MessageCreate(MessageBase):
-    message_morse: Optional[str] = Field(None, pattern=r"^[.\-\s]*$")  # Only allow ". -" characters
-    message_text: Optional[str] = Field(None)
+    morse: Optional[str] = Field(None, pattern=r"^[.\-\s]*$")  # Only allow ". -" characters
+    text: Optional[str] = Field(None)
 
 
 class Message(MessageBase):
     id: int
-    time_message_sent: datetime
-    time_message_printed: Optional[datetime]
+    time_sent: datetime
+    time_printed: Optional[datetime]
 
 
 class BadRequestError(BaseModel):
