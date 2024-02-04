@@ -10,10 +10,25 @@ class Direction(str, Enum):
     outgoing: str = "Outgoing"
 
 
+class Target(str, Enum):
+    fire_control: int = "FireControl"
+    university: int = "University"
+    central_intel: int = "CentralIntel"
+    relay: int = "Relay"
+    logistics: int = "Logistics"
+    local_civilian: int = "LocalCivilian"
+    long_range: int = "LongRange"
+
+    @staticmethod
+    def getIndex(value):
+        return list(Target).index(value)
+
+
 class MessageBase(BaseModel):
     text: str
     morse: str
     direction: Direction
+    target: Target
 
 
 class MessageCreate(MessageBase):

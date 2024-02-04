@@ -21,5 +21,9 @@ class Message(Base):
     # Can be either "outgoing" (sent by players to somewhere) or "incoming" (So sent to the players)
     direction: Mapped[str]
 
+    # In case of outgoing, where was the message sent to, in case of incoming, where was the message sent from
+
+    target: Mapped[str]
+
     # Has the message been printed already? If it's None it hasn't been printed yet
     time_printed: Mapped[Optional[datetime]]

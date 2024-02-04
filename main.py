@@ -15,6 +15,7 @@ from escpos.exceptions import DeviceNotFoundError
 from usb.core import USBError
 
 from PeripheralSerialController import PeripheralSerialController
+from sql_app.schemas import Target
 
 with contextlib.redirect_stdout(None):
     import pygame
@@ -117,6 +118,7 @@ class PygameWrapper:
                 # Create the image to print and store it
                 image = MorseImageCreator.createImage(data[0]["text"], single_line_config)
                 image.save(f"{self._last_printed_message_id}.png")
+                self._peripheral_controller.setActiveLed(Target.getIndex(data[0]["target"]))
                 self._start_playing_message = True
             else:
                 self._request_message_pending = False
@@ -217,6 +219,8 @@ class PygameWrapper:
                             # Notify the server that the message has been printed
                             requests.post(f"{self._base_server_url}/messages/{self._last_printed_message_id}/mark_as_printed")
                             self._channel2.play(self._final_bell)
+                            # Disable the led again!
+                            self._peripheral_controller.setActiveLed(-1)
                             # Only start requesting new messages again after a certain time.
                             # This will ensure that messages don't get mushed together.
                             pygame.time.set_timer(request_update_server_event, self.MIN_TIME_BETWEEN_MESSAGES, 1)
