@@ -3,6 +3,7 @@
 
 #define NUM_LEDS 7
 #define DATA_PIN 6
+#define VOLTMETER_PIN 10                                                                  
 
 #define FRAMES_PER_SECOND 25
 
@@ -50,10 +51,27 @@
 #define COOLING  55 
 #define SPARKING 20
 
+
+#define MAX_VOLT_UPDATE_DELAY         15
+#define MIN_VOLT_UPDATE_DELAY         5
+
+#define VOLT_LARGE_JUMP_MIN           20
+#define VOLT_LARGE_JUMP_MAX           30
+#define VOLT_LARGE_JUMP_CHANCE        5
+
+#define VOLT_SMALL_JUMP_MIN           5
+#define VOLT_SMALL_JUMP_MAX           10    
+
+#define VOLT_MAX_VALUE                60
+#define VOLT_MIN_VALUE                0
+
 CRGB leds[NUM_LEDS];
 
 int active_led = -1;
-
+bool volt_meter_active = true;
+int ticks_per_voltmeter_update = 25;
+int voltmeter_tick = 0;
+int voltmeter_value = 0;
 
 byte state;
 unsigned long flicker_msecs;
@@ -81,11 +99,14 @@ float floatFromPC = 0.0;
 
 boolean newData = false;
 
+
 void setup() { 
+  pinMode(VOLTMETER_PIN, OUTPUT);  
   FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   FastLED.clear(); 
   currentPalette = gradient;
   Serial.begin(115200);
+  voltmeter_value = random(64);
 }
 
 
@@ -94,6 +115,37 @@ void loop() {
   if (newData == true) {
     parseData();
     newData = false;
+  }
+  if(volt_meter_active)
+  { 
+    voltmeter_tick++;
+    if(voltmeter_tick > ticks_per_voltmeter_update)
+    {
+      voltmeter_tick = 0;
+      ticks_per_voltmeter_update = random(MIN_VOLT_UPDATE_DELAY, MAX_VOLT_UPDATE_DELAY);
+      int jump_value = 0;
+      if(random(100) < VOLT_LARGE_JUMP_CHANCE)
+      {
+        // Do large jump
+        jump_value = random(VOLT_LARGE_JUMP_MIN, VOLT_LARGE_JUMP_MAX);
+      } else
+      {
+        jump_value = random(VOLT_SMALL_JUMP_MIN, VOLT_SMALL_JUMP_MAX);
+        // Do small jump
+      }
+      int jump_direction = 1;
+      if(random(100) < 50)
+      {
+        jump_direction = -1;
+      }
+      
+      voltmeter_value += jump_direction * jump_value;
+      voltmeter_value = MAXVAL(MINVAL(voltmeter_value, VOLT_MAX_VALUE), VOLT_MIN_VALUE);
+    }
+    analogWrite(VOLTMETER_PIN, voltmeter_value);
+  } else
+  {
+    analogWrite(VOLTMETER_PIN, VOLT_MIN_VALUE);
   }
   
   random16_add_entropy( random());
@@ -148,6 +200,12 @@ void parseData() {      // split the data into its parts
     Serial.print("Setting active light to: ");
     Serial.println(command_value);
     active_led = command_value;
+  }
+  if(command == "volt")
+  {
+    Serial.print("setting volt to: ");
+    Serial.println(bool(command_value));
+    volt_meter_active = bool(command_value);
   }
 
 }
