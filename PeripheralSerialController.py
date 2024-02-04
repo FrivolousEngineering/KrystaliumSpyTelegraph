@@ -15,6 +15,7 @@ class PeripheralSerialController:
         self._serial_recreate_time = 5
 
         self._active_led: int = -1
+        self._volt_meter_active = False
 
     def start(self) -> None:
         # TODO: Should probably handle starting it multiple times?
@@ -22,6 +23,9 @@ class PeripheralSerialController:
 
     def setActiveLed(self, active_led: int) -> None:
         self._active_led = active_led
+
+    def setVoltMeterActive(self, active: bool) -> None:
+        self._volt_meter_active = active
 
     def stop(self):
         self._serial = None
@@ -42,6 +46,10 @@ class PeripheralSerialController:
         while self._serial is not None:
             try:
                 self._sendCommand(f"light {self._active_led}")
+                if self._volt_meter_active:
+                    self._sendCommand("volt 1")
+                else:
+                    self._sendCommand("volt 0")
                 time.sleep(0.5)  # Throttle the sending a bit.
 
             except serial.SerialException:

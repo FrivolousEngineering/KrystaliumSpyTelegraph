@@ -119,6 +119,7 @@ class PygameWrapper:
                 image = MorseImageCreator.createImage(data[0]["text"], single_line_config)
                 image.save(f"{self._last_printed_message_id}.png")
                 self._peripheral_controller.setActiveLed(Target.getIndex(data[0]["target"]))
+                self._peripheral_controller.setVoltMeterActive(True)
                 self._start_playing_message = True
             else:
                 self._request_message_pending = False
@@ -221,6 +222,7 @@ class PygameWrapper:
                             self._channel2.play(self._final_bell)
                             # Disable the led again!
                             self._peripheral_controller.setActiveLed(-1)
+                            self._peripheral_controller.setVoltMeterActive(False)
                             # Only start requesting new messages again after a certain time.
                             # This will ensure that messages don't get mushed together.
                             pygame.time.set_timer(request_update_server_event, self.MIN_TIME_BETWEEN_MESSAGES, 1)

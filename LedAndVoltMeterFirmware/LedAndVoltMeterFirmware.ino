@@ -68,7 +68,7 @@
 CRGB leds[NUM_LEDS];
 
 int active_led = -1;
-bool volt_meter_active = true;
+bool volt_meter_active = false;
 int ticks_per_voltmeter_update = 25;
 int voltmeter_tick = 0;
 int voltmeter_value = 0;
