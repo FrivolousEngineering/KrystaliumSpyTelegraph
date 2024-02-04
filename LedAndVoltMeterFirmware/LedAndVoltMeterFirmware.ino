@@ -84,8 +84,6 @@ boolean newData = false;
 void setup() { 
   FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   FastLED.clear(); 
-
-  active_led = 1; // No led is active
   currentPalette = gradient;
   Serial.begin(115200);
 }

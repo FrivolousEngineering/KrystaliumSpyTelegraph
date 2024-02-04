@@ -4,8 +4,8 @@ import threading
 import time
 
 
-class PheripheralSerialController:
-    def __init__(self,  baud_rate = 9600):
+class PeripheralSerialController:
+    def __init__(self,  baud_rate = 115200):
         # Handle listening to serial.
         self._serial_listen_thread = threading.Thread(target=self._handleSerial, daemon=True)
         self._baud_rate = baud_rate
@@ -14,20 +14,35 @@ class PheripheralSerialController:
         self._recreate_serial_timer = None
         self._serial_recreate_time = 5
 
+        self._active_led: int = -1
+
     def start(self) -> None:
         # TODO: Should probably handle starting it multiple times?
         self._createSerial()
+
+    def setActiveLed(self, active_led: int) -> None:
+        self._active_led = active_led
 
     def stop(self):
         self._serial = None
         if self._recreate_serial_timer:
             self._recreate_serial_timer.cancel()
 
+    def _sendCommand(self, command=""):
+        # TODO: add command validity checking.
+        if self._serial:
+            self._serial.write(b"\n")
+            command += "\n"
+            self._serial.write(command.encode('utf-8'))
+        else:
+            logging.error("Unable to write command %s without serial connection" % command)
+
     def _handleSerial(self):
         logging.info("Starting serial thread")
         while self._serial is not None:
             try:
-                pass
+                self._sendCommand(f"light {self._active_led}")
+                time.sleep(0.5)  # Throttle the sending a bit.
 
             except serial.SerialException:
                 logging.warning("Previously working serial has stopped working, try to re-create!")

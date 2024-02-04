@@ -14,6 +14,8 @@ import contextlib
 from escpos.exceptions import DeviceNotFoundError
 from usb.core import USBError
 
+from PeripheralSerialController import PeripheralSerialController
+
 with contextlib.redirect_stdout(None):
     import pygame
 
@@ -78,6 +80,8 @@ class PygameWrapper:
         self._request_message_to_be_printed_thread: Optional[threading.Thread] = None
         self._request_message_pending = False
         self._last_printed_message_id = None
+
+        self._peripheral_controller = PeripheralSerialController()
 
         self._typed_text = ""  # The text that is localy typed
 
@@ -167,6 +171,7 @@ class PygameWrapper:
     def run(self) -> None:
         logging.info("Display has started")
         self._running = True
+        self._peripheral_controller.start()
         while self._running:
             if self._start_playing_message:  # Flag that we flip if we want to start the sounds
                 pygame.event.post(pygame.event.Event(sound_completed_event))
@@ -263,6 +268,8 @@ class PygameWrapper:
                     logging.info("Typing timeout.")
                     self._typed_text = ""
                     self._request_message_pending = False
+        self._peripheral_controller.stop()
+        quit()
 
 
 if __name__ == '__main__':
