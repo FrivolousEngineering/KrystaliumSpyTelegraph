@@ -3,7 +3,8 @@
 
 #define NUM_LEDS 7
 #define DATA_PIN 6
-#define VOLTMETER_PIN 10                                                                  
+#define VOLTMETER_PIN 10           
+#define POTENTIOMETER_PIN A6                                                       
 
 #define FRAMES_PER_SECOND 25
 
@@ -102,6 +103,7 @@ boolean newData = false;
 
 void setup() { 
   pinMode(VOLTMETER_PIN, OUTPUT);  
+  pinMode(POTENTIOMETER_PIN, INPUT);
   FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   FastLED.clear(); 
   currentPalette = gradient;
@@ -111,6 +113,10 @@ void setup() {
 
 
 void loop() { 
+  int value = analogRead(POTENTIOMETER_PIN);
+  //Serial.print("Potentiometer value: ");
+  //Serial.println(value);
+  
   recvWithStartEndMarkers();
   if (newData == true) {
     parseData();
