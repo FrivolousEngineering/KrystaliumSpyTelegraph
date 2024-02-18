@@ -219,7 +219,7 @@ class PygameWrapper:
                         if self.feedPaper():
                             # Notify the server that the message has been printed
                             requests.post(f"{self._base_server_url}/messages/{self._last_printed_message_id}/mark_as_printed")
-                            self._channel2.play(self._final_bell)
+                            self._channel2.queue(self._final_bell)
                             # Disable the led again!
                             self._peripheral_controller.setActiveLed(-1)
                             self._peripheral_controller.setVoltMeterActive(False)
@@ -254,12 +254,12 @@ class PygameWrapper:
 
                     if char_to_play == "-":
                         if self.printImage("dash.png"):
-                            self._channel1.play(self._click_long)
+                            self._channel1.queue(self._click_long)
                         else:
                             failed_to_print = True
                     else:
                         if self.printImage("dot.png"):
-                            self._channel1.play(self._click_short)
+                            self._channel1.queue(self._click_short)
                         else:
                             failed_to_print = True
 
