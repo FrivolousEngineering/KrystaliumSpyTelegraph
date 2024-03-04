@@ -13,7 +13,7 @@ class Direction(str, Enum):
 class Target(str, Enum):
     fire_control: int = "FireControl"
     university: int = "University"
-    central_intel: int = "CentralIntel"
+    central_intel: int = "CentralIntelligence"
     relay: int = "Relay"
     logistics: int = "Logistics"
     local_civilian: int = "LocalCivilian"

@@ -120,6 +120,7 @@ void setup() {
   currentPalette = gradient;
   Serial.begin(115200);
   voltmeter_value = random(64);
+  Serial.println("Started!");
 }
 
 void setArmPosition(String pos)

@@ -87,6 +87,7 @@ class PygameWrapper:
         self._typed_text = ""  # The text that is localy typed
 
         self._printer = self.createPrinter()
+        self._arm_pos = "None"
 
     @staticmethod
     def createPrinter() -> printer.Usb:
@@ -199,9 +200,9 @@ class PygameWrapper:
                             self._typed_text = self._typed_text[:-1]
                     elif event.key == pygame.K_RETURN:
                         logging.info(f"Attempting to send the message: {self._typed_text}")
-                        r = requests.post(f"{self._base_server_url}/messages/", json = {"message_text": self._typed_text, "message_direction": "Outgoing"})
+                        print("arm posiiton" , self._peripheral_controller.getArmPosition())
+                        r = requests.post(f"{self._base_server_url}/messages/", json = {"text": self._typed_text, "direction": "Outgoing", "target": self._peripheral_controller.getArmPosition()})
                         logging.info(f"Sent message with status code {r.status_code}")
-                        # TODO: Actually send the message
                         self._request_message_pending = False
                         self._typed_text = ""
                     else:
