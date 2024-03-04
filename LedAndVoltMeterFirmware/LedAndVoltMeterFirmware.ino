@@ -1,3 +1,5 @@
+#include <Ethernet.h>
+
 #include <FastLED.h>
 
 
@@ -100,6 +102,15 @@ float floatFromPC = 0.0;
 
 boolean newData = false;
 
+int fireControl = 1023;
+int university = 945;
+int centralIntel = 771;
+int relay = 610;
+int logistics = 431;
+int localCivillian =  247;
+int longRange = 68;
+
+String currentArmPosition = "None";
 
 void setup() { 
   pinMode(VOLTMETER_PIN, OUTPUT);  
@@ -111,12 +122,57 @@ void setup() {
   voltmeter_value = random(64);
 }
 
+void setArmPosition(String pos)
+{
+  if(pos != currentArmPosition)
+  {
+    currentArmPosition = pos;
+    Serial.print("Arm position: ");
+    Serial.println(pos);
+  }
+}
+
+void findArmPosition(){
+  int value = analogRead(POTENTIOMETER_PIN);
+  int stepSize = 35;
+
+  int fireControlDistance = abs(value - fireControl);
+  int universityDistance = abs(value - university);
+  int centralIntelDistance = abs(value - centralIntel);
+  int relayDistance = abs(value - relay);
+  int logisticsDistance = abs(value - logistics);
+  int localCivillianDistance = abs(value - localCivillian);
+  int longRangeDistance = abs(value - longRange);
+ 
+
+  if(fireControlDistance < stepSize)
+  {
+    setArmPosition("FireControl");
+  } else if(universityDistance < stepSize)
+  {
+    setArmPosition("University");
+  } else if(centralIntelDistance < stepSize)
+  {
+    setArmPosition("CentralIntelligence");
+  } else if(relayDistance < stepSize)
+  {
+    setArmPosition("Relay");
+  } else if(logisticsDistance < stepSize)
+  {
+    setArmPosition("Logistics");
+  } else if(localCivillianDistance < stepSize)
+  {
+    setArmPosition("LocalCivillian");
+  } else if(longRangeDistance < stepSize){
+    setArmPosition("LongRange");
+  } else {
+    setArmPosition("None");
+  }
+}
+
 
 void loop() { 
-  int value = analogRead(POTENTIOMETER_PIN);
-  //Serial.print("Potentiometer value: ");
-  //Serial.println(value);
-  
+  findArmPosition();
   recvWithStartEndMarkers();
   if (newData == true) {
     parseData();
