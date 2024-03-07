@@ -88,6 +88,7 @@ class PygameWrapper:
 
         self._printer = self.createPrinter()
         self._arm_pos = "None"
+        self._should_print = True
 
     @staticmethod
     def createPrinter() -> printer.Usb:
@@ -122,12 +123,16 @@ class PygameWrapper:
                 self._peripheral_controller.setActiveLed(Target.getIndex(data[0]["target"]))
                 self._peripheral_controller.setVoltMeterActive(True)
                 self._start_playing_message = True
+                self._should_print = data[0]["direction"] == "Incoming"
             else:
                 self._request_message_pending = False
         else:
             self._request_message_pending = False
 
     def printImage(self, img: str) -> bool:
+        if not self._should_print:
+            return True
+
         try:
             self._printer.image(img)
             return True
@@ -149,6 +154,8 @@ class PygameWrapper:
             return False
 
     def printSpace(self) -> bool:
+        if not self._should_print:
+            return True
         try:
             self._printer.control("LF")
             return True
@@ -182,7 +189,6 @@ class PygameWrapper:
                 self._start_playing_message = False
 
             if not self._request_message_pending:  # Request update from server
-                logging.info("Requesting new message")
                 pygame.time.set_timer(request_update_server_event, self.REQUEST_UPDATE_TIME, 1)
                 self._request_message_pending = True
 
@@ -200,7 +206,6 @@ class PygameWrapper:
                             self._typed_text = self._typed_text[:-1]
                     elif event.key == pygame.K_RETURN:
                         logging.info(f"Attempting to send the message: {self._typed_text}")
-                        print("arm posiiton" , self._peripheral_controller.getArmPosition())
                         r = requests.post(f"{self._base_server_url}/messages/", json = {"text": self._typed_text, "direction": "Outgoing", "target": self._peripheral_controller.getArmPosition()})
                         logging.info(f"Sent message with status code {r.status_code}")
                         self._request_message_pending = False

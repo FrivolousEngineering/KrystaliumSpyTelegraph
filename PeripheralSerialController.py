@@ -18,7 +18,7 @@ class PeripheralSerialController:
 
         self._active_led: int = -1
         self._volt_meter_active = False
-        self._arm_position = "None"
+        self._arm_position = "Relay"
 
     def start(self) -> None:
         # TODO: Should probably handle starting it multiple times?
