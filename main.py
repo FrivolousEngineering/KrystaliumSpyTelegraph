@@ -87,7 +87,7 @@ class PygameWrapper:
         self._typed_text = ""  # The text that is localy typed
 
         self._printer = self.createPrinter()
-        self._arm_pos = "None"
+        self._arm_pos = "Relay"
         self._should_print = True
 
     @staticmethod

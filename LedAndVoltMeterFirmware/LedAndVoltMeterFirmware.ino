@@ -110,7 +110,7 @@ int logistics = 431;
 int localCivillian =  247;
 int longRange = 68;
 
-String currentArmPosition = "None";
+String currentArmPosition = "Relay";
 
 void setup() { 
   pinMode(VOLTMETER_PIN, OUTPUT);  
@@ -167,7 +167,8 @@ void findArmPosition(){
   } else if(longRangeDistance < stepSize){
     setArmPosition("LongRange");
   } else {
-    setArmPosition("None");
+    // The default
+    setArmPosition("Relay");
   }
 }
 
