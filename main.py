@@ -118,9 +118,7 @@ class PygameWrapper:
                 for char in data[0]["morse"]:
                     self._morse_queue.put(char)
                 self._last_printed_message_id = data[0]["id"]
-                # Create the image to print and store it
-                image = MorseImageCreator.createImage(data[0]["text"], single_line_config)
-                image.save(f"{self._last_printed_message_id}.png")
+
                 self._peripheral_controller.setActiveLed(Target.getIndex(data[0]["target"]))
                 self._peripheral_controller.setVoltMeterActive(True)
                 self._start_playing_message = True
