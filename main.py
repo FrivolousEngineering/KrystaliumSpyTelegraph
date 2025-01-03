@@ -7,19 +7,11 @@ import threading
 from typing import Optional
 import os
 import requests
-import fcntl
-import struct
-import subprocess
 
-
-
-from escpos import printer
 import contextlib
 
-from escpos.exceptions import DeviceNotFoundError
-from usb.core import USBError
-
 from PeripheralSerialController import PeripheralSerialController
+from Printer import Printer
 from sql_app.schemas import Target
 
 with contextlib.redirect_stdout(None):
@@ -32,7 +24,7 @@ from MorseImageCreator import MorseImageCreator
 WINDOW_WIDTH = 400
 WINDOW_HEIGHT = 400
 WINDOW_SURFACE = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.RESIZABLE
-USBLP_GET_STATUS = 0x060b
+
 DARK_BLUE = (3, 5, 54)
 
 # Pygame events
@@ -46,8 +38,6 @@ multi_line_config = Config("CENTER", 50, 20, 20, 10, 6, add_headers=True)
 single_line_config = Config("LEFT", 75, 20, 0, 20, 1, add_headers=False)
 
 
-def runningAsRoot() -> bool:
-    return os.getuid() == 0
 
 
 class PygameWrapper:
@@ -71,9 +61,12 @@ class PygameWrapper:
         else:
             self._screen = pygame.display.set_mode((self._screen_width, self._screen_height))
         self._clock = pygame.time.Clock()
-        self._running = False
+
+        self._is_running = False  # Is the application still running (used for the main loop)
 
         self._base_server_url: str = "http://127.0.0.1:8000"
+
+        # Setup all the sound stuff
         pygame.mixer.init()
         self._click_short = pygame.mixer.Sound("click_short.mp3")
         self._click_long = pygame.mixer.Sound("click_long.mp3")
@@ -93,59 +86,14 @@ class PygameWrapper:
 
         self._peripheral_controller = PeripheralSerialController()
 
-        self._typed_text = ""  # The text that is localy typed
+        self._typed_text = ""  # The text that is locally typed
 
         self._printer = self.createPrinter()
         self._arm_pos = "Relay"
-        self._should_print = True
 
     @staticmethod
-    def createPrinter() -> printer.Usb:
-        return printer.Usb(0x28e9, 0x0289, out_ep=0x03, profile="ZJ-5870")
-
-    @staticmethod
-    def resetUsbPrinter():
-        subprocess.run(["sudo", "rmmod", "usblp"])
-        subprocess.run(["sudo", "modprobe", "usblp"])
-        subprocess.run(["sudo", "chmod", "666", "/dev/usb/lp1"])
-
-    @staticmethod
-    def hasPaper():
-        if not runningAsRoot():
-            # This check will only work if you are running as root.
-            logging.warning("Unable to check paper status, not running as root")
-            return True
-        # Story time! The escpos library doesn't handle the paper checking correctly. For some reason the default
-        # usb printing driver does. But that driver doesn't play well if i want to send images. So, as any "sane"
-        # developer, it makes me think "Well, why not create a monster of frankenstein".
-        # But the problem with monsters are is that they start shouting "WHY HAVE YOU CREATED ME FATHER"
-        # That is where the resetUsbPrinter comes in.
-        # Every time we send any command over USB to the printer via escpos, the linux kernel is very graceful with
-        # removing the /dev/usb/lp1. The only way to get it back is, you guessed it, restart the module
-        # May god have mercy on my soul, for these sins should not give me any.
-        try:
-            PygameWrapper.resetUsbPrinter()
-            with open("/dev/usb/lp1", "r+b") as printer:
-                # Send paper status command
-                printer.write(b'\x10\x04\x04')
-                printer.flush()
-
-                # Get status using ioctl
-                status = struct.unpack('B', fcntl.ioctl(printer, USBLP_GET_STATUS, b'\x00'))[0]
-                result = f"{status:08b}"  # Convert status to binary
-                paper_present = result[2] == "1"  # Check paper bit
-
-                # Graceful close: Reset printer to avoid device lock
-                # printer.write(b'\x1b\x40')  # ESC @ (reset command)
-                # printer.flush()
-
-                return paper_present
-        except FileNotFoundError:
-            print("Printer not found at /dev/usb/lp1.")
-            return False
-        except Exception as e:
-            print("Error reading printer status:", e)
-            return False
+    def createPrinter() -> Printer:
+        return Printer()
 
     def _requestMessageToBePrinted(self) -> None:
         try:
@@ -165,8 +113,8 @@ class PygameWrapper:
             return
         if r.status_code == 200:
             data = r.json()
-
             if data:
+                logging.info("Message from server obtained")
                 for char in data[0]["morse"]:
                     self._morse_queue.put(char)
                 self._last_printed_message_id = data[0]["id"]
@@ -176,52 +124,13 @@ class PygameWrapper:
                 self._peripheral_controller.setActiveLed(Target.getIndex(data[0]["target"]))
                 self._peripheral_controller.setVoltMeterActive(True)
                 self._start_playing_message = True
-                self._should_print = data[0]["direction"] == "Incoming"
+                # If we got a message from the server that was typed by the players, we only want to play the
+                # sounds. We don't want to print the message.
+                self._printer.setEnabled(data[0]["direction"] == "Incoming")
             else:
                 self._request_message_pending = False
         else:
             self._request_message_pending = False
-
-    def printImage(self, img: str) -> bool:
-        if not self._should_print:
-            return True
-        if not PygameWrapper.hasPaper():
-            return False
-        try:
-            self._printer.image(img)
-            return True
-        except (DeviceNotFoundError, USBError):
-            logging.warning("printer not found")
-            self._printer = self.createPrinter()
-            return False
-
-    def feedPaper(self) -> bool:
-        # Move the paper a bit so that we have some whitespace to tear it off
-        if not PygameWrapper.hasPaper():
-            return False
-        try:
-            self._printer.control("LF")
-            self._printer.control("LF")
-            self._printer.control("LF")
-            self._printer.control("LF")
-            return True
-        except (DeviceNotFoundError, USBError):
-            self._printer = self.createPrinter()
-            return False
-
-    def printSpace(self) -> bool:
-        if not self._should_print:
-            return True
-
-        if not PygameWrapper.hasPaper():
-            return False
-        try:
-            self._printer.control("LF")
-            return True
-        except (DeviceNotFoundError, USBError):
-            logging.warning("printer not found")
-            self._printer = self.createPrinter()
-            return False
 
     @staticmethod
     def _setupLogging() -> None:
@@ -240,9 +149,9 @@ class PygameWrapper:
 
     def run(self) -> None:
         logging.info("Display has started")
-        self._running = True
+        self._is_running = True
         self._peripheral_controller.start()
-        while self._running:
+        while self._is_running:
             if self._start_playing_message:  # Flag that we flip if we want to start the sounds
                 pygame.event.post(pygame.event.Event(sound_completed_event))
                 self._start_playing_message = False
@@ -273,7 +182,7 @@ class PygameWrapper:
                         self._typed_text += event.unicode
 
                 if event.type == pygame.QUIT:
-                    self._running = False
+                    self._is_running = False
                     break
 
                 if event.type == sound_completed_event or event.type == retry_printer_not_found_event:
@@ -281,7 +190,7 @@ class PygameWrapper:
                     if not self._morse_queue.queue:
                         logging.info("Queue is empty")
 
-                        if self.feedPaper():
+                        if self._printer.feedPaper():
                             logging.info("Message has been printed!")
                             # Notify the server that the message has been printed
                             requests.post(f"{self._base_server_url}/messages/{self._last_printed_message_id}/mark_as_printed")
@@ -311,7 +220,7 @@ class PygameWrapper:
                     failed_to_print = False
                     if char_to_play == " ":
                         # Print the message (although we might want to start that when we get the message tho?
-                        if self.printSpace():
+                        if self._printer.printSpace():
                             # Post a "fake" sound completed event, this will trigger the next sound to be played.
                             pygame.event.post(pygame.event.Event(sound_completed_event))
                             continue  # We already did the pause, move on!
@@ -319,18 +228,18 @@ class PygameWrapper:
                             failed_to_print = True
 
                     if char_to_play == "-":
-                        if self.printImage("dash.png"):
+                        if self._printer.printImage("dash.png"):
                             self._channel1.queue(self._click_long)
                         else:
                             failed_to_print = True
                     else:
-                        if self.printImage("dot.png"):
+                        if self._printer.printImage("dot.png"):
                             self._channel1.queue(self._click_short)
                         else:
                             failed_to_print = True
 
                     if failed_to_print:
-                        logging.warning("Failed to print, scheduling again untill printer is back")
+                        logging.warning("Failed to print, scheduling again until printer is back")
                         self._morse_queue.queue.insert(0, char_to_play)
                         # Set an event to try again after some time
                         pygame.time.set_timer(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME, 1)
