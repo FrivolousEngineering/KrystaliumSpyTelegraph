@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message Viewer</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; cursor: pointer; }
+        th { background-color: #f4f4f4; }
+        .incoming { background-color: #e6ffe6; }
+        .outgoing { background-color: #ffe6e6; }
+        .filter { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Messages</h1>
+    <div class="filter">
+        <label for="direction">Direction:</label>
+        <select id="direction">
+            <option value="">All</option>
+            <option value="Incoming">Incoming</option>
+            <option value="Outgoing">Outgoing</option>
+        </select>
+
+        <label for="target">Target:</label>
+        <select id="target">
+            <option value="">All</option>
+            <option value="FireControl">FireControl</option>
+            <option value="University">University</option>
+            <option value="CentralIntelligence">CentralIntelligence</option>
+            <option value="Relay">Relay</option>
+            <option value="Logistics">Logistics</option>
+            <option value="LocalCivilian">LocalCivilian</option>
+            <option value="LongRange">LongRange</option>
+        </select>
+
+        <button onclick="fetchMessages()">Filter</button>
+    </div>
+
+    <table id="messageTable">
+        <thead>
+            <tr>
+                <th>Text</th>
+                <th>Direction</th>
+                <th>Target</th>
+                <th id="timeHeader">Time Sent</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Messages will be inserted here -->
+        </tbody>
+    </table>
+
+    <script>
+        let messages = [];
+        let sortAscending = false;
+
+        async function fetchMessages() {
+            const response = await fetch('/messages/');
+            messages = await response.json();
+
+            sortMessages();  // Always sort when new data comes in
+        }
+
+        function renderMessages(direction, target) {
+            const tableBody = document.querySelector('#messageTable tbody');
+            tableBody.innerHTML = '';
+
+            messages.filter(msg => {
+                return (direction === '' || msg.direction === direction) &&
+                       (target === '' || msg.target === target);
+            }).forEach(msg => {
+                const row = document.createElement('tr');
+                row.className = msg.direction.toLowerCase();
+                row.innerHTML = `
+                    <td>${msg.text}</td>
+                    <td>${msg.direction}</td>
+                    <td>${msg.target}</td>
+                    <td>${new Date(msg.time_sent).toLocaleString()}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function flipSorting(){
+            sortAscending = !sortAscending;
+            sortMessages();
+        }
+        function sortMessages() {
+            messages.sort((a, b) => {
+                return sortAscending ? new Date(a.time_sent) - new Date(b.time_sent) : new Date(b.time_sent) - new Date(a.time_sent);
+            });
+            renderMessages(document.getElementById('direction').value, document.getElementById('target').value);
+        }
+
+        document.getElementById('timeHeader').addEventListener('click', flipSorting);
+
+        // Initial fetch on load
+        fetchMessages();
+
+        // Set interval to fetch messages every 10 seconds
+        setInterval(fetchMessages, 10000);
+    </script>
+</body>
+</html>
