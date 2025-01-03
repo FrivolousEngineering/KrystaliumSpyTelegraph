@@ -38,8 +38,6 @@ multi_line_config = Config("CENTER", 50, 20, 20, 10, 6, add_headers=True)
 single_line_config = Config("LEFT", 75, 20, 0, 20, 1, add_headers=False)
 
 
-
-
 class PygameWrapper:
     MIN_SPACE_PAUSE = 400
     MAX_SPACE_PAUSE = 500
@@ -52,19 +50,27 @@ class PygameWrapper:
     RETRY_PRINTER_NOT_FOUND_TIME = 2000  # 2 seconds
     MESSAGE_TYPING_TIMEOUT_TIME = 30000  # 30 secs
 
+    SCREEN_SIZE = (1280, 720)
+    SERVER_URL: str = "http://127.0.0.1:8000"
+
     def __init__(self, fullscreen: bool = True) -> None:
+        """
+        We are using a wrapper for a few reasons:
+        1. We want to handle keyboard inputs from the user (which is suprisingly hard without a simple game engine)
+        2. We want to play sounds at certain moments.
+
+        Note that the screen isn't even enabled on the actual device.
+        :param fullscreen:
+        """
         pygame.init()
-        self._screen_width = 1280
-        self._screen_height = 720
+
         if fullscreen:
-            self._screen = pygame.display.set_mode((self._screen_width, self._screen_height), pygame.FULLSCREEN)
+            self._screen = pygame.display.set_mode(self.SCREEN_SIZE, pygame.FULLSCREEN)
         else:
-            self._screen = pygame.display.set_mode((self._screen_width, self._screen_height))
+            self._screen = pygame.display.set_mode(self.SCREEN_SIZE)
+
         self._clock = pygame.time.Clock()
-
         self._is_running = False  # Is the application still running (used for the main loop)
-
-        self._base_server_url: str = "http://127.0.0.1:8000"
 
         # Setup all the sound stuff
         pygame.mixer.init()
@@ -91,7 +97,11 @@ class PygameWrapper:
         self._printer = Printer()
         self._arm_pos = "Relay"
 
-    def _requestMessageToBePrinted(self) -> None:
+    def _requestUnprintedMessagesFromServer(self) -> None:
+        """
+        This will start a thread that will handle the request to the server to ask for unprinted messages.
+        :return:
+        """
         try:
             if self._request_message_to_be_printed_thread is not None:
                 self._request_message_to_be_printed_thread.join()
@@ -102,7 +112,7 @@ class PygameWrapper:
 
     def _doServerRequest(self) -> None:
         try:
-            r = requests.get(f"{self._base_server_url}/messages/unprinted/")
+            r = requests.get(f"{self.SERVER_URL}/messages/unprinted/")
         except requests.exceptions.ConnectionError:
             logging.error("Failed to connect to the server")
             self._request_message_pending = False
@@ -160,8 +170,8 @@ class PygameWrapper:
                     # Stop requesting new messages. Players are typing
                     pygame.time.set_timer(request_update_server_event, 0)
 
-                    # Start a clearing timer (otherwise if someone accidentally touches the keyboard, the entire
-                    # thing stops working. By continiously resetting the timer every time a key is pressed this
+                    # Start a clearing timer. If we don't, accidental keyboard presses might lock the device.
+                    # By continuously resetting the timer every time a key is pressed this
                     # works as a "x seconds after last activity" timeout.
                     pygame.time.set_timer(message_typing_timeout_event, self.MESSAGE_TYPING_TIMEOUT_TIME, 1)
                     if event.key == pygame.K_BACKSPACE:
@@ -169,7 +179,7 @@ class PygameWrapper:
                             self._typed_text = self._typed_text[:-1]
                     elif event.key == pygame.K_RETURN:
                         logging.info(f"Attempting to send the message: {self._typed_text}")
-                        r = requests.post(f"{self._base_server_url}/messages/", json = {"text": self._typed_text, "direction": "Outgoing", "target": self._peripheral_controller.getArmPosition()})
+                        r = requests.post(f"{self.SERVER_URL}/messages/", json = {"text": self._typed_text, "direction": "Outgoing", "target": self._peripheral_controller.getArmPosition()})
                         logging.info(f"Sent message with status code {r.status_code}")
                         self._request_message_pending = False
                         self._typed_text = ""
@@ -188,7 +198,7 @@ class PygameWrapper:
                         if self._printer.feedPaper():
                             logging.info("Message has been printed!")
                             # Notify the server that the message has been printed
-                            requests.post(f"{self._base_server_url}/messages/{self._last_printed_message_id}/mark_as_printed")
+                            requests.post(f"{self.SERVER_URL}/messages/{self._last_printed_message_id}/mark_as_printed")
                             self._channel2.queue(self._final_bell)
                             # Disable the led again!
                             self._peripheral_controller.setActiveLed(-1)
@@ -240,7 +250,7 @@ class PygameWrapper:
                         pygame.time.set_timer(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME, 1)
 
                 elif event.type == request_update_server_event:
-                    self._requestMessageToBePrinted()
+                    self._requestUnprintedMessagesFromServer()
                 elif event.type == message_typing_timeout_event:
                     logging.info("Typing timeout.")
                     self._typed_text = ""
