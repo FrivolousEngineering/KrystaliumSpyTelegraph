@@ -88,12 +88,8 @@ class PygameWrapper:
 
         self._typed_text = ""  # The text that is locally typed
 
-        self._printer = self.createPrinter()
+        self._printer = Printer()
         self._arm_pos = "Relay"
-
-    @staticmethod
-    def createPrinter() -> Printer:
-        return Printer()
 
     def _requestMessageToBePrinted(self) -> None:
         try:
@@ -128,6 +124,7 @@ class PygameWrapper:
             else:
                 self._request_message_pending = False
         else:
+            logging.error(f"Got non OK status code from server: {r.status_code}")
             self._request_message_pending = False
 
     @staticmethod
