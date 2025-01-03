@@ -10,6 +10,8 @@ import requests
 
 import contextlib
 
+from pygame.event import Event
+
 from PeripheralSerialController import PeripheralSerialController
 from Printer import Printer
 from sql_app.schemas import Target
@@ -152,6 +154,27 @@ class PygameWrapper:
         handler.setFormatter(formatter)
         root.addHandler(handler)
 
+    def _handleKeyDownEvent(self, event: Event):
+        # Stop requesting new messages. Players are typing
+        pygame.time.set_timer(request_update_server_event, 0)
+
+        # Start a clearing timer. If we don't, accidental keyboard presses might lock the device.
+        # By continuously resetting the timer every time a key is pressed this
+        # works as a "x seconds after last activity" timeout.
+        pygame.time.set_timer(message_typing_timeout_event, self.MESSAGE_TYPING_TIMEOUT_TIME, 1)
+        if event.key == pygame.K_BACKSPACE:
+            if len(self._typed_text) > 0:
+                self._typed_text = self._typed_text[:-1]
+        elif event.key == pygame.K_RETURN:  # Enter was pressed, send the message to the server
+            logging.info(f"Attempting to send the message: {self._typed_text}")
+            r = requests.post(f"{self.SERVER_URL}/messages/", json={"text": self._typed_text, "direction": "Outgoing",
+                                                                    "target": self._peripheral_controller.getArmPosition()})
+            logging.info(f"Sent message with status code {r.status_code}")
+            self._request_message_pending = False
+            self._typed_text = ""
+        else:
+            self._typed_text += event.unicode
+
     def run(self) -> None:
         logging.info("Display has started")
         self._is_running = True
@@ -161,30 +184,13 @@ class PygameWrapper:
                 pygame.event.post(pygame.event.Event(sound_completed_event))
                 self._start_playing_message = False
 
-            if not self._request_message_pending:  # Request update from server
+            if not self._request_message_pending:  # We're not waiting for an update from the server
                 pygame.time.set_timer(request_update_server_event, self.REQUEST_UPDATE_TIME, 1)
                 self._request_message_pending = True
 
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
-                    # Stop requesting new messages. Players are typing
-                    pygame.time.set_timer(request_update_server_event, 0)
-
-                    # Start a clearing timer. If we don't, accidental keyboard presses might lock the device.
-                    # By continuously resetting the timer every time a key is pressed this
-                    # works as a "x seconds after last activity" timeout.
-                    pygame.time.set_timer(message_typing_timeout_event, self.MESSAGE_TYPING_TIMEOUT_TIME, 1)
-                    if event.key == pygame.K_BACKSPACE:
-                        if len(self._typed_text) > 0:
-                            self._typed_text = self._typed_text[:-1]
-                    elif event.key == pygame.K_RETURN:
-                        logging.info(f"Attempting to send the message: {self._typed_text}")
-                        r = requests.post(f"{self.SERVER_URL}/messages/", json = {"text": self._typed_text, "direction": "Outgoing", "target": self._peripheral_controller.getArmPosition()})
-                        logging.info(f"Sent message with status code {r.status_code}")
-                        self._request_message_pending = False
-                        self._typed_text = ""
-                    else:
-                        self._typed_text += event.unicode
+                    self._handleKeyDownEvent(event)
 
                 if event.type == pygame.QUIT:
                     self._is_running = False
@@ -200,7 +206,7 @@ class PygameWrapper:
                             # Notify the server that the message has been printed
                             requests.post(f"{self.SERVER_URL}/messages/{self._last_printed_message_id}/mark_as_printed")
                             self._channel2.queue(self._final_bell)
-                            # Disable the led again!
+                            # Disable the LED again!
                             self._peripheral_controller.setActiveLed(-1)
                             self._peripheral_controller.setVoltMeterActive(False)
                             # Only start requesting new messages again after a certain time.
