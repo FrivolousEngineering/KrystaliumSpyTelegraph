@@ -37,6 +37,8 @@ class Printer:
         subprocess.run(["sudo", "chmod", "666", "/dev/usb/lp1"])
 
     def feedPaper(self) -> bool:
+        if not self._should_print:
+            return True
         # Move the paper a bit so that we have some whitespace to tear it off
         if not self.hasPaper():
             return False
