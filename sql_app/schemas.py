@@ -29,13 +29,14 @@ class MessageBase(BaseModel):
     morse: str
     direction: Direction
     target: Target
+    author: Optional[str] = Field(None, description="If a message is sent by GM, this should be filled in. Just there"
+                                                    "for bookkeeping!")
 
 
 class MessageCreate(MessageBase):
     morse: Optional[str] = Field(None, pattern=r"^[.\-\s]*$")  # Only allow ". -" characters
     text: Optional[str] = Field(None)
-    author: Optional[str] = Field(None, description="If a message is sent by GM, this should be filled in. Just there"
-                                                    "for bookkeeping!")
+
 
 
 class Message(MessageBase):

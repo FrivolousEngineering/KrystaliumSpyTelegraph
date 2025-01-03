@@ -11,11 +11,36 @@
         th { background-color: #f4f4f4; }
         .incoming { background-color: #e6ffe6; }
         .outgoing { background-color: #ffe6e6; }
-        .filter { margin: 10px 0; }
+        .filter, .message-form { margin: 10px 0; }
+        textarea { width: 100%; height: 100px; resize: vertical; }
     </style>
 </head>
 <body>
     <h1>Messages</h1>
+
+
+    <div class="message-form">
+        <h2>Send Message</h2>
+        <label for="messageText">Text:</label>
+        <textarea id="messageText" required></textarea>
+
+        <label for="targetSelect">Target:</label>
+        <select id="targetSelect">
+            <option value="FireControl">FireControl</option>
+            <option value="University">University</option>
+            <option value="CentralIntelligence">CentralIntelligence</option>
+            <option value="Relay">Relay</option>
+            <option value="Logistics">Logistics</option>
+            <option value="LocalCivilian">LocalCivilian</option>
+            <option value="LongRange">LongRange</option>
+        </select>
+
+        <label for="author">Author:</label>
+        <input type="text" id="author" required>
+
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <h2>Sent & received messages</h2>
     <div class="filter">
         <label for="direction">Direction:</label>
         <select id="direction">
@@ -65,6 +90,40 @@
             sortMessages();  // Always sort when new data comes in
         }
 
+        async function sendMessage() {
+            const text = document.getElementById('messageText').value;
+            const target = document.getElementById('targetSelect').value;
+            const author = document.getElementById('author').value;
+
+            if (!author) {
+                alert('Author field is required. Please enter the author name.');
+                return;
+            }
+
+            const payload = {
+                text: text,
+                target: target,
+                direction: 'Incoming',
+                author: author
+            };
+
+            const response = await fetch('/messages/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                fetchMessages();
+                document.getElementById('messageText').value = '';
+                document.getElementById('author').value = '';
+            } else {
+                alert('Failed to send message');
+            }
+        }
+
         function renderMessages(direction, target) {
             const tableBody = document.querySelector('#messageTable tbody');
             tableBody.innerHTML = '';
@@ -86,10 +145,11 @@
             });
         }
 
-        function flipSorting(){
+        function flipSorting() {
             sortAscending = !sortAscending;
             sortMessages();
         }
+
         function sortMessages() {
             messages.sort((a, b) => {
                 return sortAscending ? new Date(a.time_sent) - new Date(b.time_sent) : new Date(b.time_sent) - new Date(a.time_sent);
@@ -98,11 +158,7 @@
         }
 
         document.getElementById('timeHeader').addEventListener('click', flipSorting);
-
-        // Initial fetch on load
         fetchMessages();
-
-        // Set interval to fetch messages every 10 seconds
         setInterval(fetchMessages, 10000);
     </script>
 </body>
