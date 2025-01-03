@@ -276,6 +276,7 @@ class PygameWrapper:
                         logging.info("Queue is empty")
 
                         if self.feedPaper():
+                            logging.info("Message has been printed!")
                             # Notify the server that the message has been printed
                             requests.post(f"{self._base_server_url}/messages/{self._last_printed_message_id}/mark_as_printed")
                             self._channel2.queue(self._final_bell)
@@ -323,6 +324,7 @@ class PygameWrapper:
                             failed_to_print = True
 
                     if failed_to_print:
+                        logging.warning("Failed to print, scheduling again untill printer is back")
                         self._morse_queue.queue.insert(0, char_to_play)
                         # Set an event to try again after some time
                         pygame.time.set_timer(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME, 1)
