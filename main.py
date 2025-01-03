@@ -109,7 +109,7 @@ class PygameWrapper:
                 self._request_message_to_be_printed_thread.join()
         except Exception:
             pass
-        self._request_message_to_be_printed_thread = threading.Thread(target = self._doServerRequest)
+        self._request_message_to_be_printed_thread = threading.Thread(target=self._doServerRequest)
         self._request_message_to_be_printed_thread.start()
 
     def _doServerRequest(self) -> None:
@@ -156,12 +156,12 @@ class PygameWrapper:
 
     def _handleKeyDownEvent(self, event: Event):
         # Stop requesting new messages. Players are typing
-        pygame.time.set_timer(request_update_server_event, 0)
+        self._cancelEvent(request_update_server_event)
 
         # Start a clearing timer. If we don't, accidental keyboard presses might lock the device.
         # By continuously resetting the timer every time a key is pressed this
         # works as a "x seconds after last activity" timeout.
-        pygame.time.set_timer(message_typing_timeout_event, self.MESSAGE_TYPING_TIMEOUT_TIME, 1)
+        self._triggerEvent(message_typing_timeout_event, self.MESSAGE_TYPING_TIMEOUT_TIME)
         if event.key == pygame.K_BACKSPACE:
             if len(self._typed_text) > 0:
                 self._typed_text = self._typed_text[:-1]
@@ -175,6 +175,23 @@ class PygameWrapper:
         else:
             self._typed_text += event.unicode
 
+    @staticmethod
+    def _cancelEvent(event_type):
+        pygame.time.set_timer(event_type, 0)
+
+    @staticmethod
+    def _triggerEvent(event_type, min_time: int, max_time: int = 0) -> None:
+        """
+        Trigger an event for the pygame loop
+        :param event_type:
+        :param min_time: The minimum time it should take for this to be triggered.
+        :param max_time: The max time that this event should be triggered in. If left to 0, no randomness is aplied and
+                            the min_time is leading
+        :return:
+        """
+        time_to_use = random.randint(min_time, max_time) if max_time != 0 else min_time
+        pygame.time.set_timer(event_type, time_to_use, loops=1)
+
     def run(self) -> None:
         logging.info("Display has started")
         self._is_running = True
@@ -185,7 +202,7 @@ class PygameWrapper:
                 self._start_playing_message = False
 
             if not self._request_message_pending:  # We're not waiting for an update from the server
-                pygame.time.set_timer(request_update_server_event, self.REQUEST_UPDATE_TIME, 1)
+                self._triggerEvent(request_update_server_event, self.REQUEST_UPDATE_TIME)
                 self._request_message_pending = True
 
             for event in pygame.event.get():
@@ -211,19 +228,16 @@ class PygameWrapper:
                             self._peripheral_controller.setVoltMeterActive(False)
                             # Only start requesting new messages again after a certain time.
                             # This will ensure that messages don't get mushed together.
-                            pygame.time.set_timer(request_update_server_event, self.MIN_TIME_BETWEEN_MESSAGES, 1)
+                            self._triggerEvent(request_update_server_event, self.MIN_TIME_BETWEEN_MESSAGES)
                         else:
                             # Set an event to try again after some time
-                            pygame.time.set_timer(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME, 1)
+                            self._triggerEvent(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME)
                         continue
                     if self._morse_queue.queue[0] == " ":
-                        pygame.time.set_timer(pause_between_tick_event,
-                                              random.randint(self.MIN_SPACE_PAUSE, self.MAX_SPACE_PAUSE), 1)
+                        self._triggerEvent(pause_between_tick_event, self.MIN_SPACE_PAUSE, self.MAX_SPACE_PAUSE)
                     else:
                         # Set a new event to put some pause between the ticks
-                        pygame.time.set_timer(pause_between_tick_event,
-                                              random.randint(self.MIN_CHAR_PAUSE, self.MAX_CHAR_PAUSE),
-                                              1)
+                        self._triggerEvent(pause_between_tick_event, self.MIN_CHAR_PAUSE, self.MAX_CHAR_PAUSE)
 
                 elif event.type == pause_between_tick_event:
                     # Pause was completed, play the next sound!
@@ -253,7 +267,7 @@ class PygameWrapper:
                         logging.warning("Failed to print, scheduling again until printer is back")
                         self._morse_queue.queue.insert(0, char_to_play)
                         # Set an event to try again after some time
-                        pygame.time.set_timer(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME, 1)
+                        self._triggerEvent(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME)
 
                 elif event.type == request_update_server_event:
                     self._requestUnprintedMessagesFromServer()
