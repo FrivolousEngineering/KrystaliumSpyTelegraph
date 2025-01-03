@@ -43,3 +43,13 @@ Enable both of them (this will ensure that they auto-boot)
 sudo systemctl enable telegraph.service
 sudo systemctl enable telegraph-database.service
 ```
+
+#Troubleshooting
+## The printer doesn't seem to be recognized
+Check that user is in dialout, check that 99-escpos.rules is set.
+
+It might be needed to kick the usb printer module: 
+```
+sudo rmmod usblp
+sudo modprobe usblp
+```

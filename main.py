@@ -114,7 +114,7 @@ class PygameWrapper:
         if not runningAsRoot():
             # This check will only work if you are running as root.
             logging.warning("Unable to check paper status, not running as root")
-            return
+            return True
         # Story time! The escpos library doesn't handle the paper checking correctly. For some reason the default
         # usb printing driver does. But that driver doesn't play well if i want to send images. So, as any "sane"
         # developer, it makes me think "Well, why not create a monster of frankenstein".
@@ -185,7 +185,8 @@ class PygameWrapper:
     def printImage(self, img: str) -> bool:
         if not self._should_print:
             return True
-
+        if not PygameWrapper.hasPaper():
+            return False
         try:
             self._printer.image(img)
             return True
@@ -196,6 +197,8 @@ class PygameWrapper:
 
     def feedPaper(self) -> bool:
         # Move the paper a bit so that we have some whitespace to tear it off
+        if not PygameWrapper.hasPaper():
+            return False
         try:
             self._printer.control("LF")
             self._printer.control("LF")
@@ -209,6 +212,9 @@ class PygameWrapper:
     def printSpace(self) -> bool:
         if not self._should_print:
             return True
+
+        if not PygameWrapper.hasPaper():
+            return False
         try:
             self._printer.control("LF")
             return True
