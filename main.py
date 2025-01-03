@@ -114,17 +114,25 @@ class PygameWrapper:
             data = r.json()
             if data:
                 logging.info("Message from server obtained")
-                if data[0]["type"] == "Morse":
-                    for char in data[0]["encoded_text"]:
-                        self._morse_queue.put(char)
+
                 self._last_printed_message_id = data[0]["id"]
 
-                self._peripheral_controller.setActiveLed(Target.getIndex(data[0]["target"]))
-                self._peripheral_controller.setVoltMeterActive(True)
-                self._start_playing_message = True
-                # If we got a message from the server that was typed by the players, we only want to play the
-                # sounds. We don't want to print the message.
-                self._printer.setEnabled(data[0]["direction"] == "Incoming")
+                if data[0]["direction"] == "Outgoing":
+                    self._sound.playBellDouble()
+                    self.markMessageAsPrinted(self._last_printed_message_id)
+                    self._request_message_pending = False
+                else:
+                    if data[0]["type"] == "Morse":
+                        for char in data[0]["encoded_text"]:
+                            self._morse_queue.put(char)
+
+
+                    self._peripheral_controller.setActiveLed(Target.getIndex(data[0]["target"]))
+                    self._peripheral_controller.setVoltMeterActive(True)
+                    self._start_playing_message = True
+                    # If we got a message from the server that was typed by the players, we only want to play the
+                    # sounds. We don't want to print the message.
+                    self._printer.setEnabled(data[0]["direction"] == "Incoming")
             else:
                 self._request_message_pending = False
         else:
@@ -171,6 +179,9 @@ class PygameWrapper:
     def _cancelEvent(event_type):
         pygame.time.set_timer(event_type, 0)
 
+    def markMessageAsPrinted(self, message_id):
+        requests.post(f"{self.SERVER_URL}/messages/{message_id}/mark_as_printed")
+
     @staticmethod
     def _triggerEvent(event_type, min_time: int, max_time: int = 0) -> None:
         """
@@ -213,7 +224,7 @@ class PygameWrapper:
                         if self._printer.feedPaper():
                             logging.info("Message has been printed!")
                             # Notify the server that the message has been printed
-                            requests.post(f"{self.SERVER_URL}/messages/{self._last_printed_message_id}/mark_as_printed")
+                            self.markMessageAsPrinted(self._last_printed_message_id)
                             self._sound.playBell()
                             # Disable the LED again!
                             self._peripheral_controller.setActiveLed(-1)

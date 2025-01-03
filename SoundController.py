@@ -19,6 +19,7 @@ class SoundController:
         self._clicks_long = self._loadSounds("Sounds/LongClicks")
 
         self._final_bell = pygame.mixer.Sound("Sounds/final_bell.mp3")
+        self._bell_double = pygame.mixer.Sound("Sounds/final_bell_double.mp3")
 
         self._click_sound_channel = pygame.mixer.Channel(0)
         self._click_sound_channel.set_endevent(self.sound_completed_event)
@@ -43,3 +44,6 @@ class SoundController:
 
     def playBell(self):
         self._bell_sound_channel.queue(self._final_bell)
+
+    def playBellDouble(self):
+        self._bell_sound_channel.queue(self._bell_double)
