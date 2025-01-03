@@ -114,8 +114,9 @@ class PygameWrapper:
             data = r.json()
             if data:
                 logging.info("Message from server obtained")
-                for char in data[0]["morse"]:
-                    self._morse_queue.put(char)
+                if data[0]["type"] == "Morse":
+                    for char in data[0]["encoded_text"]:
+                        self._morse_queue.put(char)
                 self._last_printed_message_id = data[0]["id"]
 
                 self._peripheral_controller.setActiveLed(Target.getIndex(data[0]["target"]))

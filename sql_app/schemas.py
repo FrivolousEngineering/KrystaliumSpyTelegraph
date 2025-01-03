@@ -10,6 +10,10 @@ class Direction(str, Enum):
     outgoing: str = "Outgoing"
 
 
+class MessageType(str, Enum):
+    morse: str = "Morse"
+
+
 class Target(str, Enum):
     fire_control: int = "FireControl"
     university: int = "University"
@@ -26,23 +30,23 @@ class Target(str, Enum):
 
 class MessageBase(BaseModel):
     text: str
-    morse: str
+
     direction: Direction
     target: Target
     author: Optional[str] = Field(None, description="If a message is sent by GM, this should be filled in. Just there"
                                                     "for bookkeeping!")
+    type: MessageType = "Morse"
 
 
 class MessageCreate(MessageBase):
-    morse: Optional[str] = Field(None, pattern=r"^[.\-\s]*$")  # Only allow ". -" characters
     text: Optional[str] = Field(None)
-
 
 
 class Message(MessageBase):
     id: int
     time_sent: datetime
     time_printed: Optional[datetime]
+    encoded_text: str
 
 
 class BadRequestError(BaseModel):

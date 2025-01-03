@@ -35,11 +35,10 @@ def markMessageAsPrinted(message_id: int, db: Session):
 def createMessage(db: Session, message: schemas.MessageCreate) -> models.Message:
     db_message = models.Message(**message.__dict__)
     db_message.time_sent = datetime.now()
-
-    if db_message.text:
-        db_message.morse = MorseTranslator.textToMorse(db_message.text)
+    if db_message.type == "Morse":
+        db_message.encoded_text = MorseTranslator.textToMorse(db_message.text)
     else:
-        db_message.text = MorseTranslator.morseToText(db_message.morse)
+        print("UNKNOWN TYPE!")
 
     db.add(db_message)
     db.commit()
