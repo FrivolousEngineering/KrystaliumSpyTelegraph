@@ -15,7 +15,11 @@ def runningAsRoot() -> bool:
 
 
 class Printer:
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Wrapper around the USB thermal printer. Handles things like being disabled and re-creating the device
+        if the connection was lost.
+        """
         self._printer: printer.Usb = self._createPrinter()
         self._should_print: bool = True
 
