@@ -5,7 +5,6 @@ import sys
 import random
 import threading
 from typing import Optional
-import os
 import requests
 
 import contextlib
@@ -14,13 +13,13 @@ from pygame.event import Event
 
 from PeripheralSerialController import PeripheralSerialController
 from Printer import Printer
+from SoundController import SoundController
 from sql_app.schemas import Target
 
 with contextlib.redirect_stdout(None):
     import pygame
 
 from Config import Config
-from MorseImageCreator import MorseImageCreator
 
 # Window size
 WINDOW_WIDTH = 400
@@ -30,7 +29,7 @@ WINDOW_SURFACE = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.RESIZABLE
 DARK_BLUE = (3, 5, 54)
 
 # Pygame events
-sound_completed_event = pygame.USEREVENT + 1
+sound_completed_event = SoundController.sound_completed_event
 pause_between_tick_event = pygame.USEREVENT + 2
 request_update_server_event = pygame.USEREVENT + 3
 retry_printer_not_found_event = pygame.USEREVENT + 4
@@ -75,17 +74,7 @@ class PygameWrapper:
         self._clock = pygame.time.Clock()
         self._is_running = False  # Is the application still running (used for the main loop)
 
-        # Setup all the sound stuff
-        pygame.mixer.init()
-        self._click_short = pygame.mixer.Sound("click_short.mp3")
-        self._click_long = pygame.mixer.Sound("click_long.mp3")
-        self._final_bell = pygame.mixer.Sound("final_bell.mp3")
-
-        self._click_sound_channel = pygame.mixer.Channel(0)
-        self._click_sound_channel.set_endevent(sound_completed_event)
-
-        # As we don't want a complete event for the bell, we use a separate channel
-        self._bell_sound_channel = pygame.mixer.Channel(1)
+        self._sound = SoundController()
 
         self._start_playing_message = False
         self._morse_queue: Queue = Queue()
@@ -100,15 +89,6 @@ class PygameWrapper:
 
         self._printer = Printer()
         self._arm_pos = "Relay"
-
-    def _playLongClick(self):
-        self._click_sound_channel.queue(self._click_long)
-
-    def _playShortClick(self):
-        self._click_sound_channel.queue(self._click_short)
-
-    def _playBell(self):
-        self._bell_sound_channel.queue(self._final_bell)
 
     def _requestUnprintedMessagesFromServer(self) -> None:
         """
@@ -233,7 +213,7 @@ class PygameWrapper:
                             logging.info("Message has been printed!")
                             # Notify the server that the message has been printed
                             requests.post(f"{self.SERVER_URL}/messages/{self._last_printed_message_id}/mark_as_printed")
-                            self._playBell()
+                            self._sound.playBell()
                             # Disable the LED again!
                             self._peripheral_controller.setActiveLed(-1)
                             self._peripheral_controller.setVoltMeterActive(False)
@@ -265,12 +245,12 @@ class PygameWrapper:
 
                     if char_to_play == "-":
                         if self._printer.printImage("dash.png"):
-                            self._playLongClick()
+                            self._sound.playLongClick()
                         else:
                             failed_to_print = True
                     else:
                         if self._printer.printImage("dot.png"):
-                            self._playShortClick()
+                            self._sound.playShortClick()
                         else:
                             failed_to_print = True
 
