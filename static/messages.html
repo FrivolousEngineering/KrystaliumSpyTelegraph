@@ -46,6 +46,7 @@
                 <th>Direction</th>
                 <th>Target</th>
                 <th id="timeHeader">Time Sent</th>
+                <th>Author</th>
             </tr>
         </thead>
         <tbody>
@@ -79,6 +80,7 @@
                     <td>${msg.direction}</td>
                     <td>${msg.target}</td>
                     <td>${new Date(msg.time_sent).toLocaleString()}</td>
+                    <td>${msg.author}</td>
                 `;
                 tableBody.appendChild(row);
             });

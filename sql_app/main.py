@@ -16,6 +16,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
     # This function is required to locally host the swagger API. This means that the docs will work without internet
