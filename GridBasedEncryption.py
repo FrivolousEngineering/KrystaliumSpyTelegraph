@@ -1,17 +1,17 @@
 import random
 import string
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Set
 
 
 class EncryptionGrid:
     def __init__(self, num_columns: int, num_rows: int):
         self._grid: List[List[str]] = self._fillGridRandomly(num_columns, num_rows)
-        self._locked_fields = set()  # Stores locked positions as (row, column)
+        self._locked_fields:  Set[Tuple[int, int]]= set()  # Stores locked positions as (row, column)
 
-    def getRawGrid(self):
+    def getRawGrid(self) -> List[List[str]]:
         return self._grid
 
-    def getLockedFields(self):
+    def getLockedFields(self) -> Set[Tuple[int, int]]:
         return self._locked_fields
 
     def canEncodeRowMethod(self, message: str, key: List[int]) -> bool:
