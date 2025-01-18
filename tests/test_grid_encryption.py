@@ -128,6 +128,12 @@ def test_encode_too_long_message_skip(sample_grid):
         sample_grid.addMessageSkipMethod("HERPIEDERPIEDERPANDMAYBESOMEMOREDERPLIKETHISISJUSTTOOMUCHMANYEAHITSWAYTOMUCH")
 
 
+def test_encode_short_key_long_message_row(sample_grid):
+    sample_grid.addMessageRowMethod("WORLD", preset_key = [1,2])
+
+def test_encode_short_key_long_message_skip(sample_grid):
+    sample_grid.addMessageSkipMethod("WORLD", preset_key = [1,2])
+
 def test_encoding_row_fails_with_conflicting_preset_key(sample_grid):
     """Test that encoding fails with a conflicting preset key."""
     grid = sample_grid
