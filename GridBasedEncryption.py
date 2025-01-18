@@ -13,29 +13,66 @@ class EncryptionGrid:
         Adds a message to the grid using the Row Method.
         Returns the key used for encoding the message.
         """
-        key = []
+        key: List[int] = []
+
+        # Copy the grid and locked fields to test changes before committing
+        grid_copy = [row.copy() for row in self._grid]
+        locked_fields_copy = self._locked_fields.copy()
+
         msg_index = 0
 
-        for row_idx, row in enumerate(self._grid):
-            if msg_index >= len(message):
-                key.append(0)  # No character added for this row
-                continue
+        try:
+            for row_idx, row in enumerate(self._grid):
+                if msg_index >= len(message):
+                    key.append(0)  # No character added for this row
+                    continue
 
-            available_columns = [
-                col_idx
-                for col_idx in range(len(row))
-                if (row_idx, col_idx) not in self._locked_fields
-            ]
+                char = message[msg_index]
 
-            if not available_columns:
-                key.append(0)  # No space in this row
-                continue
+                # Check if the character naturally exists in this row
+                for col_idx, cell in enumerate(row):
+                    if cell == char:
+                        # Allow use if the field is either unlocked or naturally fits and locked
+                        if (row_idx, col_idx) in locked_fields_copy:
+                            # It's locked but naturally occurring; we can reuse it
+                            key.append(col_idx + 1)  # Use the natural position (1-based index)
+                            break
+                        else:
+                            # It's unlocked; we can lock and use it
+                            locked_fields_copy.add((row_idx, col_idx))
+                            key.append(col_idx + 1)
+                            break
+                else:
+                    # No natural occurrence found, look for an available (unlocked) field
+                    possible_fields = [
+                        col_idx
+                        for col_idx in range(len(row))
+                        if (row_idx, col_idx) not in locked_fields_copy
+                    ]
 
-            col_idx = random.choice(available_columns)
-            self._grid[row_idx][col_idx] = message[msg_index]
-            self._locked_fields.add((row_idx, col_idx))
-            key.append(col_idx + 1)  # Store 1-based column index
-            msg_index += 1
+                    if not possible_fields:
+                        # No available fields in this row, skip it
+                        key.append(0)
+                        continue
+
+                    # Randomly pick one of the available fields
+                    picked_col_idx = random.choice(possible_fields)
+
+                    # Update the copied grid
+                    grid_copy[row_idx][picked_col_idx] = char
+                    locked_fields_copy.add((row_idx, picked_col_idx))
+
+                    key.append(picked_col_idx + 1)  # Store 1-based index
+
+                # Move to the next character in the message
+                msg_index += 1
+
+        except IndexError:
+            raise ValueError("Could not fit message :(")
+
+        # Commit the changes to the grid and locked fields
+        self._grid = grid_copy
+        self._locked_fields = locked_fields_copy
 
         return key
 
@@ -62,9 +99,7 @@ class EncryptionGrid:
         try:
             for char in message:
                 # Check if we already have what we want naturally occurring in the next few characters!
-
                 for i in range(max_skip):
-
                     row_idx, col_idx = flat_list[position + i]
                     if self._grid[row_idx][col_idx] == char:
                         locked_fields_copy.add((row_idx, col_idx)) # We found a natural hit. Lock and use it!
@@ -92,7 +127,7 @@ class EncryptionGrid:
         except IndexError:
             raise ValueError("Could not fit message :(")
 
-        # We were succesfull, so now we swap the locks and the grid!
+        # We were successful, so now we swap the locks and the grid!
 
         self._grid = grid_copy
         self._locked_fields = locked_fields_copy
@@ -154,9 +189,12 @@ if __name__ == "__main__":
 
 
     print("\nAdding secondary message using Skip Method:")
-    secondary_key = grid.addMessageSkipMethod(secondary_message)
     tertiary_message = grid.addMessageSkipMethod("BEEP")
     primary_key = grid.addMessageRowMethod(primary_message)
+
+    secondary_key = grid.addMessageSkipMethod(secondary_message)
+
+
     grid.displayGrid()
     print("Primary Key (Row Method):", primary_key)
     print("Secondary Key (Skip Method):", secondary_key)
