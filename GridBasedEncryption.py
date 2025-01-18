@@ -123,7 +123,7 @@ class EncryptionGrid:
 
         return key
 
-    def addMessageSkipMethod(self, message: str, max_skip: int = 6, preset_key: Optional[List[int]] = None) -> List[
+    def addMessageSkipMethod(self, message: str, max_skip: int = 5, preset_key: Optional[List[int]] = None) -> List[
         int]:
         if preset_key is not None:
             if not self.canEncodeSkipMethod(message, preset_key):
