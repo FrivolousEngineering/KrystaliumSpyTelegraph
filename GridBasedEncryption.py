@@ -95,7 +95,6 @@ class EncryptionGrid:
             # The return is simple, as we used a key provided instead of creating our own
             return preset_key
 
-
         key: List[int] = []
 
         # Copy the grid and locked fields to test changes before committing
@@ -151,7 +150,7 @@ class EncryptionGrid:
                 msg_index += 1
 
         except IndexError:
-            raise ValueError("Could not fit message :(")
+            raise ValueError("Could not fit message")
 
         # Commit the changes to the grid and locked fields
         self._grid = grid_copy

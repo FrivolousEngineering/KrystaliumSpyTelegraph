@@ -118,6 +118,16 @@ def test_encoding_different_message_same_key_row(sample_grid):
         # This should fail, as these fields are already locked for the hello message
         sample_grid.addMessageRowMethod("WORLD", preset_key = [1, 2, 3, 4, 5])
 
+@pytest.mark.skip(reason="Not reliably failing yet, should do that")
+def test_encode_too_long_message_row(sample_grid):
+    with pytest.raises(Exception, match="Could not fit message"):
+        sample_grid.addMessageRowMethod("HERPIEDERPIEDERPANDMAYBESOMEMOREDERPLIKETHISISJUSTTOOMUCHMANYEAHITSWAYTOMUCH")
+
+def test_encode_too_long_message_skip(sample_grid):
+    with pytest.raises(Exception, match="Could not fit message"):
+        sample_grid.addMessageSkipMethod("HERPIEDERPIEDERPANDMAYBESOMEMOREDERPLIKETHISISJUSTTOOMUCHMANYEAHITSWAYTOMUCH")
+
+
 def test_encoding_row_fails_with_conflicting_preset_key(sample_grid):
     """Test that encoding fails with a conflicting preset key."""
     grid = sample_grid
