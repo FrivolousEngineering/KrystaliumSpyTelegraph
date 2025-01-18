@@ -158,3 +158,9 @@ def test_encoding_row_fails_with_conflicting_preset_key(sample_grid):
 
     with pytest.raises(Exception, match="Could not encode message with the given key"):
         grid.addMessageRowMethod(message, preset_key=conflicting_preset_key)
+
+
+def test_negative_keys(sample_grid):
+    # Technically possible, but likely to cause issues.
+    key = sample_grid.addMessageSkipMethod("HELLO", preset_key = [1,2,3,-1])
+    assert sample_grid.decodeSkipMethod(key).startswith("HELLO")
