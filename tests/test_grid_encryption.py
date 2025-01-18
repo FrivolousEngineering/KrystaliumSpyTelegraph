@@ -65,8 +65,10 @@ def test_add_message_row_method_with_preset_key(sample_grid, type, message, pres
 @pytest.mark.parametrize(
     "message, max_skip",
     [
-        ("HELLO", 6),
-        ("WORLD", 5)
+        ("HELLO", 1),
+        ("WORLD", 2),
+        ("BLOOP", 3),
+        ("HAI",   8) # (should never fail, as we have 25 chars and we allow a skip of max 8
     ],
 )
 def test_add_message_skip_method_with_generated_key(sample_grid, message, max_skip):
@@ -77,13 +79,44 @@ def test_add_message_skip_method_with_generated_key(sample_grid, message, max_sk
     assert decoded_message.startswith(message), f"Failed to encode/decode {message} with skip method"
     assert all(skip <= max_skip for skip in key), "Key contains skips larger than max_skip"
 
-
 def test_multiple_encode_no_preset_row_first(sample_grid):
     hello_key = sample_grid.addMessageRowMethod("HELLO")
     world_key = sample_grid.addMessageSkipMethod("WORLD")
 
     assert sample_grid.decodeRowMethod(hello_key).startswith("HELLO")
     assert sample_grid.decodeSkipMethod(world_key).startswith("WORLD")
+
+@pytest.mark.parametrize("type", ["skip", "row"])
+@pytest.mark.parametrize(
+    "messages", 
+    [
+        ["HELLO", "HELLO"],
+        ["HELLO", "WORLD"],
+        ["HELLO", "WORLD", "HERP"],
+    ]
+)
+def test_encode_multiple_messages(sample_grid, messages, type):
+    for message in messages:
+        test_encode_message(sample_grid, message, type)
+
+
+@pytest.mark.parametrize("type", ["skip", "row"])
+@pytest.mark.parametrize(
+    "message",
+    [
+        "HERP", "DERP", "BIKE", "SMILE"
+    ]
+)
+def test_encode_message(sample_grid, message, type):
+    decoded_message = ""
+    if type == "skip":
+        result_key = sample_grid.addMessageSkipMethod(message)
+        decoded_message = sample_grid.decodeSkipMethod(result_key)
+    elif type == "row":
+        result_key = sample_grid.addMessageRowMethod(message)
+        decoded_message = sample_grid.decodeRowMethod(result_key)
+
+    assert decoded_message.startswith(message)
 
 def test_multiple_encode_no_preset_skip_first(sample_grid):
     # As the ordering might matter, we move some stuff around
@@ -113,8 +146,6 @@ def test_encode_too_long_message_row(sample_grid):
 def test_encode_too_long_message_skip(sample_grid):
     with pytest.raises(Exception, match="Could not fit message"):
         sample_grid.addMessageSkipMethod("HERPIEDERPIEDERPANDMAYBESOMEMOREDERPLIKETHISISJUSTTOOMUCHMANYEAHITSWAYTOMUCH")
-
-
 
 
 def test_encoding_row_fails_with_conflicting_preset_key(sample_grid):
