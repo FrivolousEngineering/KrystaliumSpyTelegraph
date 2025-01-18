@@ -136,7 +136,8 @@ def test_encode_too_long_message_skip(sample_grid):
     [
         ("DERP", [1]),
         ("DERP", [1, 2]),
-        # ("DERP", [1,2,0] <- still broken, debug why and fix it!
+        ("DERP", [1, 2, 0]),
+        ("DER", [1,0,1])  # Slightly shorter message, as with the row setup we don't have enough rows in the sample grid otherwise
     ],
 )
 def test_encode_short_key_long_message_row(sample_grid, type, message, preset_key):

@@ -72,18 +72,32 @@ class EncryptionGrid:
 
             # Message can be encoded with the given key
             key_length = len(preset_key)
-            for msg_idx, char in enumerate(message):
-                row_idx = msg_idx % len(self._grid)
-                col_idx = (preset_key[msg_idx % key_length] - 1)  # Convert 1-based to 0-based
+            message_idx = 0  # Keep track of the current character in the message
+
+            for row_idx in range(len(self._grid)):
+                if message_idx >= len(message):
+                    break  # All characters in the message have been encoded
+
+                col_idx = preset_key[row_idx % key_length] - 1  # Convert 1-based to 0-based
 
                 if col_idx == -1:
                     continue  # Skip this row as per the key
+
+                char = message[message_idx]
+
                 if (row_idx, col_idx) in self._locked_fields:
-                    continue  # Field is already locked, no modification needed
+                    # Field is locked; ensure it already contains the correct character
+                    if self._grid[row_idx][col_idx] != char:
+                        raise Exception(f"Locked field at ({row_idx}, {col_idx}) contains a different character.")
                 else:
-                    # Field is unlocked, update the grid and lock the field
+                    # Field is unlocked; update the grid and lock the field
                     self._grid[row_idx][col_idx] = char
                     self._locked_fields.add((row_idx, col_idx))
+
+                message_idx += 1  # Move to the next character in the message
+
+            if message_idx < len(message):
+                raise Exception("Not all characters could be encoded with the given key")
 
             return preset_key
 
@@ -225,4 +239,24 @@ class EncryptionGrid:
 
 
 
+
+if __name__ == "__main__":
+
+    grid = EncryptionGrid(5,5)
+    grid._grid = [
+        list("ABCDE"),
+        list("FGHIJ"),
+        list("KLMNO"),
+        list("PQRST"),
+        list("UVWXY"),
+    ]
+
+    import EncryptionGridVisualizer
+
+    viz = EncryptionGridVisualizer.EncryptionGridVisualizer(grid)
+    viz.displayGrid()
+    print()
+    grid.addMessageRowMethod("BJOR", [1,2,0])
+    viz.displayGrid()
+    print(grid.decodeRowMethod([1,2,0]))
 
