@@ -8,6 +8,73 @@ class EncryptionGrid:
         self._grid: List[List[str]] = self._fillGridRandomly(num_columns, num_rows)
         self._locked_fields = set()  # Stores locked positions as (row, column)
 
+    def displayLockedFields(self) -> None:
+        """
+        Displays the grid with `X` for locked fields and `O` for open fields.
+        Only used for debugging
+        """
+        locked_visualization = [
+            [
+                'X' if (row_idx, col_idx) in self._locked_fields else 'O'
+                for col_idx in range(len(row))
+            ]
+            for row_idx, row in enumerate(self._grid)
+        ]
+
+        print("Locked Fields Visualization:")
+        for row in locked_visualization:
+            print(" ".join(row))
+
+    def visualizeRowMethodDecode(self, key: List[int]) -> None:
+        """
+        Visualizes which letters in the grid were used for the Row Method decode.
+        Displays the grid with `-` for unused letters and the letter for used ones.
+        """
+        visualization = [
+            [
+                self._grid[row_idx][col_idx] if (col_idx + 1) == key[row_idx] else '-'
+                for col_idx in range(len(row))
+            ]
+            for row_idx, row in enumerate(self._grid)
+        ]
+
+        print("Row Method Decode Visualization:")
+        for row in visualization:
+            print(" ".join(row))
+
+    def visualizeSkipMethodDecode(self, key: List[int]) -> None:
+        """
+        Visualizes which letters in the grid were used for the Skip Method decode.
+        Displays the grid with `-` for unused letters and the letter for used ones.
+        """
+        # Flatten the grid to match the decode logic
+        flat_list = [
+            (row_idx, col_idx)
+            for row_idx, row in enumerate(self._grid)
+            for col_idx in range(len(row))
+        ]
+
+        # Keep track of used positions based on skips
+        used_positions = set()
+        position = -1
+
+        for skip in key:
+            position += skip + 1
+            used_positions.add(flat_list[position])
+
+        # Create a visualization grid
+        visualization = [
+            [
+                self._grid[row_idx][col_idx] if (row_idx, col_idx) in used_positions else '-'
+                for col_idx in range(len(row))
+            ]
+            for row_idx, row in enumerate(self._grid)
+        ]
+
+        print("Skip Method Decode Visualization:")
+        for row in visualization:
+            print(" ".join(row))
+
     def addMessageRowMethod(self, message: str) -> List[int]:
         """
         Adds a message to the grid using the Row Method.
@@ -161,7 +228,6 @@ class EncryptionGrid:
     def decodeSkipMethod(self, key: List[int]) -> str:
         """
         Decodes a message encoded using the Skip Method.
-        The key indicates the 1-based flattened index of the letters in the grid.
         """
         # Flatten the grid
         flat_list = [self._grid[row_idx][col_idx] for row_idx in range(len(self._grid)) for col_idx in range(len(self._grid[row_idx]))]
@@ -189,19 +255,22 @@ if __name__ == "__main__":
 
 
     print("\nAdding secondary message using Skip Method:")
-    tertiary_message = grid.addMessageSkipMethod("BEEP")
     primary_key = grid.addMessageRowMethod(primary_message)
+    grid.visualizeRowMethodDecode(primary_key)
 
     secondary_key = grid.addMessageSkipMethod(secondary_message)
+    grid.visualizeSkipMethodDecode(secondary_key)
 
+    tertiary_key = grid.addMessageSkipMethod("BEEP")
+    grid.visualizeSkipMethodDecode(tertiary_key)
 
     grid.displayGrid()
     print("Primary Key (Row Method):", primary_key)
     print("Secondary Key (Skip Method):", secondary_key)
-    print("Tertiary message (Skip Method):", tertiary_message)
+    print("Tertiary message (Skip Method):", tertiary_key)
 
     print("decoded message:", grid.decodeRowMethod(primary_key))
     print("decoded message:", grid.decodeSkipMethod(secondary_key))
-    print("decoded message:", grid.decodeSkipMethod(tertiary_message))
+    print("decoded message:", grid.decodeSkipMethod(tertiary_key))
 
 
