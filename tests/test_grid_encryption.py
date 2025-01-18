@@ -30,36 +30,37 @@ def sample_grid():
     ]
     return grid
 
-@pytest.mark.parametrize(
-    "message, expected_key",
-    [
-        ("HELLO", [1, 2, 3, 4, 5]),
-        ("ABCDE", [1, 1, 1, 1, 1]),
-        ("WORLD", [0, 2, 3, 0, 4]),
-    ],
-)
-def test_add_message_row_method_with_generated_key(sample_grid, message, expected_key):
-    """Test addMessageRowMethod with dynamically generated keys."""
-    grid = sample_grid
-    key = grid.addMessageRowMethod(message)
-    decoded_message = grid.decodeRowMethod(key)
-    assert decoded_message.startswith(message), f"Failed to encode/decode {message}"
-    assert len(key) == len(grid._grid), "Key length does not match grid rows"
-
+# This creates a grid of tests (whoo python magic)
+# We basically want to test if we can encode stuff with shorter keys than the message as
+# it should loop the key
+@pytest.mark.parametrize("type", ["skip", "row"])
 @pytest.mark.parametrize(
     "message, preset_key",
     [
+        # Decode with same key lengths
         ("HELLO", [1, 2, 3, 4, 5]),
         ("ABCDE", [1, 1, 2, 1, 3]),
+        # Then we try it with non-matching key lengths
+        ("DERP", [1]),
+        ("DERP", [1, 2]),
+        ("DERP", [1, 2, 0]),
+        ("DER", [1, 0, 1]),  # Slightly shorter message, as with the row setup we don't have enough rows in the sample grid otherwise
+        # Then we try some more with keys longer than the message
+        ("OMG", [1,2,3,4,5,2])
     ],
 )
-def test_add_message_row_method_with_preset_key(sample_grid, message, preset_key):
-    """Test addMessageRowMethod with a preset key."""
-    grid = sample_grid
-    result_key = grid.addMessageRowMethod(message, preset_key)
-    assert result_key == preset_key, "Returned key does not match the preset key"
-    decoded_message = grid.decodeRowMethod(result_key)
-    assert decoded_message.startswith(message), f"Failed to encode/decode {message} with preset key"
+def test_add_message_row_method_with_preset_key(sample_grid, type, message, preset_key):
+    result_key = []
+    decoded_message = ""
+    if type == "skip":
+        result_key = sample_grid.addMessageSkipMethod(message, preset_key = preset_key)
+        decoded_message = sample_grid.decodeSkipMethod(preset_key)
+    elif type == "row":
+        result_key = sample_grid.addMessageRowMethod(message, preset_key=preset_key)
+        decoded_message = sample_grid.decodeRowMethod(preset_key)
+
+    assert decoded_message.startswith(message)
+    assert result_key == preset_key
 
 @pytest.mark.parametrize(
     "message, max_skip",
@@ -75,20 +76,6 @@ def test_add_message_skip_method_with_generated_key(sample_grid, message, max_sk
     decoded_message = grid.decodeSkipMethod(key)
     assert decoded_message.startswith(message), f"Failed to encode/decode {message} with skip method"
     assert all(skip <= max_skip for skip in key), "Key contains skips larger than max_skip"
-
-@pytest.mark.parametrize(
-    "message, preset_key",
-    [
-        ("HELLO", [0, 1, 2, 3, 4]),
-        ("ABCDE", [1, 0, 2, 0, 3]),
-    ],
-)
-def test_add_message_skip_method_with_preset_key(sample_grid, message, preset_key):
-    """Test addMessageSkipMethod with a preset key."""
-    result_key = sample_grid.addMessageSkipMethod(message, preset_key=preset_key)
-    assert result_key == preset_key, "Returned key does not match the preset key"
-    decoded_message = sample_grid.decodeSkipMethod(result_key)
-    assert decoded_message.startswith(message), f"Failed to encode/decode {message} with preset key"
 
 
 def test_multiple_encode_no_preset_row_first(sample_grid):
@@ -127,26 +114,8 @@ def test_encode_too_long_message_skip(sample_grid):
     with pytest.raises(Exception, match="Could not fit message"):
         sample_grid.addMessageSkipMethod("HERPIEDERPIEDERPANDMAYBESOMEMOREDERPLIKETHISISJUSTTOOMUCHMANYEAHITSWAYTOMUCH")
 
-# This creates a grid of tests (whoo python magic)
-# We basically want to test if we can encode stuff with shorter keys than the message as
-# it should loop the key
-@pytest.mark.parametrize("type", ["row", "skip"])
-@pytest.mark.parametrize(
-    "message, preset_key",
-    [
-        ("DERP", [1]),
-        ("DERP", [1, 2]),
-        ("DERP", [1, 2, 0]),
-        ("DER", [1,0,1])  # Slightly shorter message, as with the row setup we don't have enough rows in the sample grid otherwise
-    ],
-)
-def test_encode_short_key_long_message_row(sample_grid, type, message, preset_key):
-    if type == "skip":
-        sample_grid.addMessageSkipMethod(message, preset_key = preset_key)
-        assert sample_grid.decodeSkipMethod(preset_key).startswith(message)
-    elif type == "row":
-        sample_grid.addMessageRowMethod(message, preset_key=preset_key)
-        assert sample_grid.decodeRowMethod(preset_key).startswith(message)
+
+
 
 def test_encoding_row_fails_with_conflicting_preset_key(sample_grid):
     """Test that encoding fails with a conflicting preset key."""
