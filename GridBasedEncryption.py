@@ -75,7 +75,7 @@ class EncryptionGrid:
 
         if preset_key is not None:
             if not self.canEncodeRowMethod(message, preset_key):
-                raise Exception("Could not encode message with the given key")
+                raise Exception("Could not encode message with the given key and row method")
 
             # Message can be encoded with the given key
             for row_idx, col_idx in enumerate(preset_key):
