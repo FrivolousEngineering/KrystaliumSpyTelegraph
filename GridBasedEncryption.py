@@ -177,15 +177,11 @@ class EncryptionGrid:
 
 # Example usage
 if __name__ == "__main__":
-    num_columns = 5
-    num_rows = 5
     primary_message = "HELLO"
     secondary_message = "WORLD"
 
-    grid = EncryptionGrid(num_columns, num_rows)
+    grid = EncryptionGrid(5, 5)
 
-
-    print("\nAdding secondary message using Skip Method:")
     primary_key = grid.addMessageRowMethod(primary_message)
     secondary_key = grid.addMessageSkipMethod(secondary_message)
 
