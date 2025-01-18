@@ -187,9 +187,14 @@ class EncryptionGrid:
         """
         Decodes a message encoded using the Row Method.
         The key indicates which column (1-based) to pick from each row.
+        Supports looping keys.
         """
+        if not key:
+            raise ValueError("Key cannot be empty for decoding.")
+
         message = []
-        for row_idx, col_idx in enumerate(key):
+        for row_idx in range(len(self._grid)):
+            col_idx = key[row_idx % len(key)]  # Loop over the key
             if col_idx > 0:  # 0 means no letter was selected from this row
                 message.append(self._grid[row_idx][col_idx - 1])  # Convert to 0-based index
         return ''.join(message)
@@ -197,17 +202,26 @@ class EncryptionGrid:
     def decodeSkipMethod(self, key: List[int]) -> str:
         """
         Decodes a message encoded using the Skip Method.
+        Supports looping keys.
         """
+        if not key:
+            raise ValueError("Key cannot be empty for decoding.")
+
         # Flatten the grid
-        flat_list = [self._grid[row_idx][col_idx] for row_idx in range(len(self._grid)) for col_idx in range(len(self._grid[row_idx]))]
+        flat_list = [self._grid[row_idx][col_idx] for row_idx in range(len(self._grid)) for col_idx in
+                     range(len(self._grid[row_idx]))]
+
         position = -1
-
-        message = ""
-        for skip in key:
+        message = []
+        for char_idx in range(len(flat_list)):  # Decode as long as the flattened grid allows
+            skip = key[char_idx % len(key)]  # Loop over the key
             position += skip + 1
-            message += flat_list[position]
+            if position >= len(flat_list):
+                break  # Stop decoding if we exceed the grid
+            message.append(flat_list[position])
 
-        return message
+        return ''.join(message)
+
 
 
 
