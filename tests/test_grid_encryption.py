@@ -10,6 +10,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from GridBasedEncryption import EncryptionGrid
 
+sample_messages = ["HERP", "DERP", "BIKE", "SMILE"]
+encryption_types = ["skip", "row"]
+
+
 # Utility function for creating a consistent random grid
 def generate_fixed_grid(num_columns, num_rows):
     return [
@@ -33,7 +37,7 @@ def sample_grid():
 # This creates a grid of tests (whoo python magic)
 # We basically want to test if we can encode stuff with shorter keys than the message as
 # it should loop the key
-@pytest.mark.parametrize("type", ["skip", "row"])
+@pytest.mark.parametrize("type", encryption_types)
 @pytest.mark.parametrize(
     "message, preset_key",
     [
@@ -86,7 +90,7 @@ def test_multiple_encode_no_preset_row_first(sample_grid):
     assert sample_grid.decodeRowMethod(hello_key).startswith("HELLO")
     assert sample_grid.decodeSkipMethod(world_key).startswith("WORLD")
 
-@pytest.mark.parametrize("type", ["skip", "row"])
+@pytest.mark.parametrize("type", encryption_types)
 @pytest.mark.parametrize(
     "messages", 
     [
@@ -108,12 +112,9 @@ def test_encode_multiple_messages(sample_grid, messages, type):
             except ValueError:
                 num_tries += 1
 
-@pytest.mark.parametrize("type", ["skip", "row"])
+@pytest.mark.parametrize("type", encryption_types)
 @pytest.mark.parametrize(
-    "message",
-    [
-        "HERP", "DERP", "BIKE", "SMILE"
-    ]
+    "message", sample_messages
 )
 def test_encode_message(sample_grid, message, type):
     decoded_message = ""
@@ -125,6 +126,15 @@ def test_encode_message(sample_grid, message, type):
         decoded_message = sample_grid.decodeRowMethod(result_key)
 
     assert decoded_message.startswith(message)
+
+@pytest.mark.parametrize("type", encryption_types)
+@pytest.mark.parametrize(
+    "message", sample_messages
+)
+@pytest.mark.parametrize("num_columns, num_rows", [(6, 6), (10, 5), (5, 10), (10, 10)])
+def test_custom_grid_size(num_columns, num_rows, message, type):
+    test_encode_message(EncryptionGrid(num_columns, num_rows), message, type)
+
 
 def test_multiple_encode_no_preset_skip_first(sample_grid):
     # As the ordering might matter, we move some stuff around
