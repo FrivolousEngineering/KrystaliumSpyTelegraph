@@ -91,6 +91,33 @@ def test_add_message_skip_method_with_preset_key(sample_grid, message, preset_ke
     assert decoded_message == message, f"Failed to encode/decode {message} with preset key"
 
 
+def test_multiple_encode_no_preset_row_first(sample_grid):
+    hello_key = sample_grid.addMessageRowMethod("HELLO")
+    world_key = sample_grid.addMessageSkipMethod("WORLD")
+
+    assert sample_grid.decodeRowMethod(hello_key) == "HELLO"
+    assert sample_grid.decodeSkipMethod(world_key) == "WORLD"
+
+def test_multiple_encode_no_preset_skip_first(sample_grid):
+    # As the ordering might matter, we move some stuff around
+    world_key = sample_grid.addMessageSkipMethod("WORLD")
+    hello_key = sample_grid.addMessageRowMethod("HELLO")
+
+    assert sample_grid.decodeRowMethod(hello_key) == "HELLO"
+    assert sample_grid.decodeSkipMethod(world_key) == "WORLD"
+
+def test_encoding_different_message_same_key_skip(sample_grid):
+    sample_grid.addMessageSkipMethod("HELLO", preset_key = [0, 0, 0, 0, 0])
+    with pytest.raises(Exception, match="Could not encode message with the given key"):
+        # This should fail, as these fields are already locked for the hello message
+        sample_grid.addMessageSkipMethod("WORLD", preset_key = [0, 0, 0, 0, 0])
+
+def test_encoding_different_message_same_key_row(sample_grid):
+    sample_grid.addMessageRowMethod("HELLO", preset_key = [1, 2, 3, 4, 5])
+    with pytest.raises(Exception, match="Could not encode message with the given key"):
+        # This should fail, as these fields are already locked for the hello message
+        sample_grid.addMessageRowMethod("WORLD", preset_key = [1, 2, 3, 4, 5])
+
 def test_encoding_row_fails_with_conflicting_preset_key(sample_grid):
     """Test that encoding fails with a conflicting preset key."""
     grid = sample_grid
