@@ -92,7 +92,7 @@ class EncryptionGrid:
 
         return True  # All characters can be encoded
 
-    def canEncodeSkipPlowMethod(self, message: str, key: List[int], max_skip: int = 6) -> bool:
+    def canEncodeSkipPlowMethod(self, message: str, key: List[int],) -> bool:
         """
         Checks if the given message can be encoded into the grid using the Row-Plow Skip Method
         with the provided key. Alternates row traversal direction (left-to-right for even rows,
@@ -100,7 +100,6 @@ class EncryptionGrid:
 
         :param message: The message to encode.
         :param key: The key representing skips for encoding the message.
-        :param max_skip: The maximum skip range allowed.
         :return: True if the message can be encoded; False otherwise.
         """
 
@@ -300,7 +299,7 @@ class EncryptionGrid:
 
         return preset_key
 
-    def addMessageSkipPlowMethod(self, message: str, max_skip: int = 6, preset_key: Optional[List[int]] = None) -> List[
+    def addMessageSkipPlowMethod(self, message: str, max_skip: int = 5, preset_key: Optional[List[int]] = None) -> List[
         int]:
         """
         Adds a message to the grid using the Row-Plow Skip Method.
@@ -521,22 +520,24 @@ class EncryptionGrid:
 
 if __name__ == "__main__":
 
-    grid = EncryptionGrid(5,5)
-    grid._grid = [
+    grid = EncryptionGrid(7,15)
+    '''grid._grid = [
         list("ABCDE"),
         list("FGHIJ"),
         list("KLMNO"),
         list("PQRST"),
         list("UVWXY"),
-    ]
+    ]'''
 
-    grid._grid = [
+
+
+    '''grid._grid = [
         list("AAAAA"),
         list("AAAAA"),
         list("AAAAA"),
         list("AAAAA"),
         list("AAAAA"),
-    ]
+    ]'''
 
     import EncryptionGridVisualizer
 
@@ -544,7 +545,7 @@ if __name__ == "__main__":
     viz.displayGrid()
     print()
     preset_key = [1,2,1]
-    key = grid.addMessageSkipPlowMethod("TEST", max_skip= 5, preset_key = preset_key)
+    key = grid.addMessageSkipPlowMethod("THEREISAMESSAGEHERE", max_skip= 5, preset_key = preset_key)
     print(key)
     viz.displayGrid()
     print(grid.decodeSkipPlowMethod(key))
