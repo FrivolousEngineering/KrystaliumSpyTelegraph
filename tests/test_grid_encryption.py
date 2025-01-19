@@ -37,7 +37,7 @@ def sample_grid():
 # This creates a grid of tests (whoo python magic)
 # We basically want to test if we can encode stuff with shorter keys than the message as
 # it should loop the key
-@pytest.mark.parametrize("type", encryption_types)
+@pytest.mark.parametrize("encryption_type", encryption_types)
 @pytest.mark.parametrize(
     "message, preset_key",
     [
@@ -53,13 +53,13 @@ def sample_grid():
         ("OMG", [1,2,3,4,5,2])
     ],
 )
-def test_add_message_row_method_with_preset_key(sample_grid, type, message, preset_key):
+def test_add_message_row_method_with_preset_key(sample_grid, encryption_type, message, preset_key):
     result_key = []
     decoded_message = ""
-    if type == "skip":
+    if encryption_type == "skip":
         result_key = sample_grid.addMessageSkipMethod(message, preset_key = preset_key)
         decoded_message = sample_grid.decodeSkipMethod(preset_key)
-    elif type == "row":
+    elif encryption_type == "row":
         result_key = sample_grid.addMessageRowMethod(message, preset_key=preset_key)
         decoded_message = sample_grid.decodeRowMethod(preset_key)
 
@@ -90,7 +90,7 @@ def test_multiple_encode_no_preset_row_first(sample_grid):
     assert sample_grid.decodeRowMethod(hello_key).startswith("HELLO")
     assert sample_grid.decodeSkipMethod(world_key).startswith("WORLD")
 
-@pytest.mark.parametrize("type", encryption_types)
+@pytest.mark.parametrize("encryption_type", encryption_types)
 @pytest.mark.parametrize(
     "messages", 
     [
@@ -99,7 +99,7 @@ def test_multiple_encode_no_preset_row_first(sample_grid):
         ["HELLO", "WORLD", "HERP"],
     ]
 )
-def test_encode_multiple_messages(sample_grid, messages, type):
+def test_encode_multiple_messages(sample_grid, messages, encryption_type):
     for message in messages:
         # The skip can be a bit finicky, as it randomly selects some numbers to decide how much it will skip
         # So just trying a few times makes it work
@@ -107,33 +107,33 @@ def test_encode_multiple_messages(sample_grid, messages, type):
         while num_tries < 5:
             try:
                 print("TRYING", num_tries)
-                test_encode_message(sample_grid, message, type)
+                test_encode_message(sample_grid, message, encryption_type)
                 break
             except ValueError:
                 num_tries += 1
 
-@pytest.mark.parametrize("type", encryption_types)
+@pytest.mark.parametrize("encryption_type", encryption_types)
 @pytest.mark.parametrize(
     "message", sample_messages
 )
-def test_encode_message(sample_grid, message, type):
+def test_encode_message(sample_grid, message, encryption_type):
     decoded_message = ""
-    if type == "skip":
+    if encryption_type == "skip":
         result_key = sample_grid.addMessageSkipMethod(message)
         decoded_message = sample_grid.decodeSkipMethod(result_key)
-    elif type == "row":
+    elif encryption_type == "row":
         result_key = sample_grid.addMessageRowMethod(message)
         decoded_message = sample_grid.decodeRowMethod(result_key)
 
     assert decoded_message.startswith(message)
 
-@pytest.mark.parametrize("type", encryption_types)
+@pytest.mark.parametrize("encryption_type", encryption_types)
 @pytest.mark.parametrize(
     "message", sample_messages
 )
 @pytest.mark.parametrize("num_columns, num_rows", [(6, 6), (10, 5), (5, 10), (10, 10)])
-def test_custom_grid_size(num_columns, num_rows, message, type):
-    test_encode_message(EncryptionGrid(num_columns, num_rows), message, type)
+def test_custom_grid_size(num_columns, num_rows, message, encryption_type):
+    test_encode_message(EncryptionGrid(num_columns, num_rows), message, encryption_type)
 
 
 def test_multiple_encode_no_preset_skip_first(sample_grid):
