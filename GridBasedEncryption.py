@@ -35,6 +35,33 @@ class EncryptionGrid:
 
         return True  # All characters can be encoded
 
+    def canEncodeRowPlowMethod(self, message: str, key: List[int]) -> bool:
+        """
+        Checks if the given message can be encoded into the grid using the Row-Plow Method
+        with the provided key. Alternates row traversal direction (left-to-right for even rows,
+        right-to-left for odd rows). Supports looping keys.
+        """
+        if not key:
+            return False  # An empty key cannot encode anything
+
+        for row_idx, char in enumerate(message):
+            col_idx = key[row_idx % len(key)]  # Loop over the key
+            if col_idx == 0:
+                continue  # Skip this row as per the key
+
+            # Adjust the column index based on the zig-zag pattern
+            if row_idx % len(self._grid) % 2 == 1:  # Odd row, reverse direction
+                col_idx = len(self._grid[row_idx % len(self._grid)]) - col_idx + 1
+            col_idx -= 1  # Convert 1-based index to 0-based
+
+            target_row = row_idx % len(self._grid)
+            if (target_row, col_idx) in self._locked_fields:
+                # Field is locked: Check if it already contains the required character
+                if self._grid[target_row][col_idx] != char:
+                    return False  # Conflict with locked field
+
+        return True  # All characters can be encoded
+
     def canEncodeSkipMethod(self, message: str, key: List[int]) -> bool:
         """
         Checks if the given message can be encoded into the grid using the Skip Method with the provided key.
@@ -132,6 +159,92 @@ class EncryptionGrid:
 
         return key
 
+    def addMessageRowPlowMethod(self, message: str, preset_key: Optional[List[int]] = None) -> List[int]:
+        """
+        Add a message to the grid using the "Row-Plow" method. The Row-Plow method alternates the direction of traversal
+        for each row (left-to-right on even rows, right-to-left on odd rows). Keys "loop," meaning the first key value
+        is reused for rows beyond the key length.
+
+        :param message: The message to be added.
+        :param preset_key: If left to None, a key will be generated. Otherwise, the provided key will be used.
+        :return: The key (if it was provided, it's the same key; otherwise, it returns the dynamically generated key).
+        """
+        if preset_key is not None:
+            # If a preset key is provided, verify if the message can be encoded
+            if not self.canEncodeRowPlowMethod(message, preset_key):
+                raise Exception("Could not encode message with the given key and Row-Plow method")
+
+            # Encode the message using the preset key
+            key_length = len(preset_key)
+            message_idx = 0
+
+            for row_idx in range(len(self._grid)):
+                if message_idx >= len(message):
+                    break  # All characters in the message have been encoded
+
+                # Adjust the column index based on the zig-zag pattern
+                col_idx = preset_key[row_idx % key_length]
+                if col_idx == 0:
+                    continue  # Skip this row as per the key
+
+                if row_idx % 2 == 1:  # Odd row, reverse direction
+                    col_idx = len(self._grid[row_idx]) - col_idx + 1
+
+                col_idx -= 1  # Convert 1-based index to 0-based
+                char = message[message_idx]
+
+                if (row_idx, col_idx) in self._locked_fields:
+                    if self._grid[row_idx][col_idx] != char:
+                        raise Exception(f"Locked field at ({row_idx}, {col_idx}) contains a different character.")
+                else:
+                    self._grid[row_idx][col_idx] = char
+                    self._locked_fields.add((row_idx, col_idx))
+
+                message_idx += 1
+
+            if message_idx < len(message):
+                raise Exception("Not all characters could be encoded with the given key")
+
+            return preset_key
+
+        # Dynamically generate the key
+        key: List[int] = []
+        key_length = len(self._grid)
+
+        for msg_idx, char in enumerate(message):
+            row_idx = msg_idx % key_length
+
+            # Determine the available columns based on the direction of the row
+            if row_idx % 2 == 0:  # Even row (left-to-right)
+                available_columns = [
+                    col_idx
+                    for col_idx in range(len(self._grid[row_idx]))
+                    if (row_idx, col_idx) not in self._locked_fields
+                ]
+            else:  # Odd row (right-to-left)
+                available_columns = [
+                    col_idx
+                    for col_idx in range(len(self._grid[row_idx]) - 1, -1, -1)
+                    if (row_idx, col_idx) not in self._locked_fields
+                ]
+
+            if not available_columns:
+                raise ValueError("Could not fit message due to insufficient unlocked fields.")
+
+            # Choose a column dynamically
+            chosen_col_idx = random.choice(available_columns)
+            self._grid[row_idx][chosen_col_idx] = char
+            self._locked_fields.add((row_idx, chosen_col_idx))
+            # Convert the 0-based column index to a 1-based index, adjusting for row direction
+            if row_idx % 2 == 1:  # Odd row, reverse direction
+                chosen_col_idx = len(self._grid[row_idx]) - chosen_col_idx
+            else:
+                chosen_col_idx += 1
+
+            key.append(chosen_col_idx)
+
+        return key
+
     def addMessageSkipMethod(self, message: str, max_skip: int = 5, preset_key: Optional[List[int]] = None) -> List[
         int]:
         """
@@ -218,6 +331,27 @@ class EncryptionGrid:
             for _ in range(num_rows)
         ]
 
+    def decodeRowPlowMethod(self, key: List[int]) -> str:
+        """
+        Decodes a message encoded using the Row-Plow Method.
+        The key indicates which column (1-based) to pick from each row, alternating
+        direction (left-to-right for even rows, right-to-left for odd rows).
+        Supports looping keys.
+        """
+        if not key:
+            raise ValueError("Key cannot be empty for decoding.")
+
+        message = []
+        for row_idx in range(len(self._grid)):
+            col_idx = key[row_idx % len(key)]  # Loop over the key
+            if col_idx > 0:  # 0 means no letter was selected from this row
+                if row_idx % 2 == 1:  # Odd row, reverse direction
+                    col_idx = len(self._grid[row_idx]) - col_idx + 1
+                col_idx -= 1  # Convert to 0-based index
+                message.append(self._grid[row_idx][col_idx])
+
+        return ''.join(message)
+
     def decodeRowMethod(self, key: List[int]) -> str:
         """
         Decodes a message encoded using the Row Method.
@@ -269,12 +403,22 @@ if __name__ == "__main__":
         list("UVWXY"),
     ]
 
+    grid._grid = [
+        list("AAAAA"),
+        list("AAAAA"),
+        list("AAAAA"),
+        list("AAAAA"),
+        list("AAAAA"),
+    ]
+
     import EncryptionGridVisualizer
 
     viz = EncryptionGridVisualizer.EncryptionGridVisualizer(grid)
     viz.displayGrid()
     print()
-    grid.addMessageRowMethod("BJOR", [1,2,0])
+    preset_key = [1,2,1]
+    key = grid.addMessageRowPlowMethod("TEST")
+    print(key)
     viz.displayGrid()
-    print(grid.decodeRowMethod([1,2,0]))
+    print(grid.decodeRowPlowMethod(key))
 

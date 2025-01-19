@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from GridBasedEncryption import EncryptionGrid
 
 sample_messages = ["HERP", "DERP", "BIKE", "SMILE"]
-encryption_types = ["skip", "row"]
+encryption_types = ["row", "row-plow", "skip"]
 
 
 # Utility function for creating a consistent random grid
@@ -32,6 +32,14 @@ def sample_grid():
         list("PQRST"),
         list("UVWXY"),
     ]
+    '''
+    grid._grid = [
+        list("ABCDE"),
+        list("FGHIJ"),
+        list("KLMNO"),
+        list("PQRST"),
+        list("UVWXY"),
+    ]'''
     return grid
 
 # This creates a grid of tests (whoo python magic)
@@ -62,6 +70,9 @@ def test_add_message_row_method_with_preset_key(sample_grid, encryption_type, me
     elif encryption_type == "row":
         result_key = sample_grid.addMessageRowMethod(message, preset_key=preset_key)
         decoded_message = sample_grid.decodeRowMethod(preset_key)
+    elif encryption_type == "row-plow":
+        result_key = sample_grid.addMessageRowPlowMethod(message, preset_key=preset_key)
+        decoded_message = sample_grid.decodeRowPlowMethod(preset_key)
 
     assert decoded_message.startswith(message)
     assert result_key == preset_key
@@ -124,6 +135,9 @@ def test_encode_message(sample_grid, message, encryption_type):
     elif encryption_type == "row":
         result_key = sample_grid.addMessageRowMethod(message)
         decoded_message = sample_grid.decodeRowMethod(result_key)
+    elif encryption_type == "row-plow":
+        result_key = sample_grid.addMessageRowPlowMethod(message)
+        decoded_message = sample_grid.decodeRowPlowMethod(result_key)
 
     assert decoded_message.startswith(message)
 
