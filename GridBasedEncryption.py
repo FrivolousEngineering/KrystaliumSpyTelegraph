@@ -92,6 +92,42 @@ class EncryptionGrid:
 
         return True  # All characters can be encoded
 
+    def canEncodeSkipPlowMethod(self, message: str, key: List[int], max_skip: int = 6) -> bool:
+        """
+        Checks if the given message can be encoded into the grid using the Row-Plow Skip Method
+        with the provided key. Alternates row traversal direction (left-to-right for even rows,
+        right-to-left for odd rows). Ensures skips do not exceed the max_skip range.
+
+        :param message: The message to encode.
+        :param key: The key representing skips for encoding the message.
+        :param max_skip: The maximum skip range allowed.
+        :return: True if the message can be encoded; False otherwise.
+        """
+
+        # Flatten the grid with zig-zag traversal
+        flat_list = [
+            (row_idx, col_idx, self._grid[row_idx][col_idx])
+            for row_idx in range(len(self._grid))
+            for col_idx in (
+                range(len(self._grid[row_idx])) if row_idx % 2 == 0 else reversed(range(len(self._grid[row_idx])))
+            )
+        ]
+
+        position = -1
+        for char_idx, char in enumerate(message):
+            skip = key[char_idx % len(key)]  # Loop over the key
+            position += skip + 1
+            if position >= len(flat_list):
+                return False  # Out of bounds
+
+            row_idx, col_idx, cell = flat_list[position]
+            if (row_idx, col_idx) in self._locked_fields:
+                # Field is locked: Check if it already contains the required character
+                if cell != char:
+                    return False  # Conflict with locked field
+
+        return True  # All characters can be encoded
+
     def addMessageRowMethod(self, message: str, preset_key: Optional[List[int]] = None) -> List[int]:
         """
         Add a message to the grid using the "Row" method. The row method implies that the key indicates what position
@@ -245,6 +281,93 @@ class EncryptionGrid:
 
         return key
 
+
+
+    def _encodeMessageSkipWithFlatList(self, flat_list, preset_key, message):
+        position = -1
+        key_length = len(preset_key)
+        for char_idx, char in enumerate(message):
+            skip = preset_key[char_idx % key_length]
+            position += skip + 1
+            row_idx, col_idx = flat_list[position]
+
+            if (row_idx, col_idx) in self._locked_fields:
+                if self._grid[row_idx][col_idx] != char:
+                    raise Exception(f"Locked field at ({row_idx}, {col_idx}) contains a different character.")
+            else:
+                self._grid[row_idx][col_idx] = char
+                self._locked_fields.add((row_idx, col_idx))
+
+        return preset_key
+
+    def addMessageSkipPlowMethod(self, message: str, max_skip: int = 6, preset_key: Optional[List[int]] = None) -> List[
+        int]:
+        """
+        Adds a message to the grid using the Row-Plow Skip Method.
+        Alternates row traversal direction (left-to-right for even rows, right-to-left for odd rows).
+        Returns the key used for encoding the message.
+        """
+        if preset_key is not None:
+            # If a preset key is provided, verify if the message can be encoded
+            if not self.canEncodeSkipPlowMethod(message, preset_key):
+                raise Exception("Could not encode message with the given key and Row-Plow Skip method")
+
+            # Encode the message using the preset key
+            flat_list = [
+                (row_idx, col_idx)
+                for row_idx in range(len(self._grid))
+                for col_idx in (
+                    range(len(self._grid[row_idx])) if row_idx % 2 == 0 else reversed(range(len(self._grid[row_idx])))
+                )
+            ]
+            return self._encodeMessageSkipWithFlatList(flat_list, preset_key, message)
+
+
+        # Generate a dynamic key
+        key: List[int] = []
+        flat_list = [
+            (row_idx, col_idx)
+            for row_idx in range(len(self._grid))
+            for col_idx in (
+                range(len(self._grid[row_idx])) if row_idx % 2 == 0 else reversed(range(len(self._grid[row_idx])))
+            )
+        ]
+
+        position = 0
+        for char in message:
+            # Check if the character can be placed naturally within the max skip range
+            for i in range(max_skip + 1):
+                if position + i >= len(flat_list):
+                    raise ValueError("Could not fit message due to insufficient space in the grid.")
+
+                row_idx, col_idx = flat_list[position + i]
+                if self._grid[row_idx][col_idx] == char and (row_idx, col_idx) not in self._locked_fields:
+                    key.append(i)
+                    position += i + 1
+                    self._locked_fields.add((row_idx, col_idx))
+                    break
+            else:
+                # If no natural position is found, find an available unlocked position within the skip range
+                possible_positions = []
+                for i in range(max_skip + 1):
+                    if position + i >= len(flat_list):
+                        break
+                    row_idx, col_idx = flat_list[position + i]
+                    if (row_idx, col_idx) not in self._locked_fields:
+                        possible_positions.append((i, row_idx, col_idx))
+
+                if not possible_positions:
+                    raise ValueError("Could not fit message due to insufficient unlocked fields.")
+
+                # Choose a position randomly
+                chosen_skip, chosen_row_idx, chosen_col_idx = random.choice(possible_positions)
+                self._grid[chosen_row_idx][chosen_col_idx] = char
+                self._locked_fields.add((chosen_row_idx, chosen_col_idx))
+                key.append(chosen_skip)
+                position += chosen_skip + 1
+
+        return key
+
     def addMessageSkipMethod(self, message: str, max_skip: int = 5, preset_key: Optional[List[int]] = None) -> List[
         int]:
         """
@@ -269,21 +392,7 @@ class EncryptionGrid:
                 for col_idx in range(len(self._grid[row_idx]))
             ]
 
-            position = -1
-            key_length = len(preset_key)
-            for char_idx, char in enumerate(message):
-                skip = preset_key[char_idx % key_length]
-                position += skip + 1
-                row_idx, col_idx = flat_list[position]
-
-                if (row_idx, col_idx) in self._locked_fields:
-                    if self._grid[row_idx][col_idx] != char:
-                        raise Exception(f"Locked field at ({row_idx}, {col_idx}) contains a different character.")
-                else:
-                    self._grid[row_idx][col_idx] = char
-                    self._locked_fields.add((row_idx, col_idx))
-
-            return preset_key
+            return self._encodeMessageSkipWithFlatList(flat_list, preset_key, message)
 
         # Generate a looping key dynamically
         flat_list = [
@@ -368,6 +477,19 @@ class EncryptionGrid:
                 message.append(self._grid[row_idx][col_idx - 1])  # Convert to 0-based index
         return ''.join(message)
 
+
+    def _decodeSkipOnFlatList(self, flat_list: List[str], key: List[int]) -> str:
+        position = -1
+        message = []
+        for char_idx in range(len(flat_list)):  # Decode as long as the flattened grid allows
+            skip = key[char_idx % len(key)]  # Loop over the key
+            position += skip + 1
+            if position >= len(flat_list):
+                break  # Stop decoding if we exceed the grid
+            message.append(flat_list[position])
+
+        return ''.join(message)
+
     def decodeSkipMethod(self, key: List[int]) -> str:
         """
         Decodes a message encoded using the Skip Method.
@@ -379,17 +501,22 @@ class EncryptionGrid:
         # Flatten the grid
         flat_list = [self._grid[row_idx][col_idx] for row_idx in range(len(self._grid)) for col_idx in
                      range(len(self._grid[row_idx]))]
+        return self._decodeSkipOnFlatList(flat_list, key)
 
-        position = -1
-        message = []
-        for char_idx in range(len(flat_list)):  # Decode as long as the flattened grid allows
-            skip = key[char_idx % len(key)]  # Loop over the key
-            position += skip + 1
-            if position >= len(flat_list):
-                break  # Stop decoding if we exceed the grid
-            message.append(flat_list[position])
 
-        return ''.join(message)
+    def decodeSkipPlowMethod(self, key: List[int]) -> str:
+        """
+        Decodes a message encoded using the Row-Plow Skip Method.
+        Alternates row traversal direction (left-to-right for even rows, right-to-left for odd rows).
+        """
+        flat_list = [
+            self._grid[row_idx][col_idx]
+            for row_idx in range(len(self._grid))
+            for col_idx in (
+                range(len(self._grid[row_idx])) if row_idx % 2 == 0 else reversed(range(len(self._grid[row_idx])))
+            )
+        ]
+        return self._decodeSkipOnFlatList(flat_list, key)
 
 
 if __name__ == "__main__":
@@ -417,8 +544,8 @@ if __name__ == "__main__":
     viz.displayGrid()
     print()
     preset_key = [1,2,1]
-    key = grid.addMessageRowPlowMethod("TEST")
+    key = grid.addMessageSkipPlowMethod("TEST", max_skip= 5, preset_key = preset_key)
     print(key)
     viz.displayGrid()
-    print(grid.decodeRowPlowMethod(key))
+    print(grid.decodeSkipPlowMethod(key))
 
