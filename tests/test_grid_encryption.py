@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from GridBasedEncryption import EncryptionGrid
 
-sample_messages = ["HERP", "DERP", "BIKE", "SMILE"]
+sample_messages = ["HERP", "DERP", "BIKE", "SMILE", "word"]
 encryption_types = ["row", "row-plow", "skip", "skip-plow"]
 
 
@@ -77,7 +77,8 @@ def test_add_message_row_method_with_preset_key(sample_grid, encryption_type, me
         result_key = sample_grid.addMessageSkipPlowMethod(message, preset_key=preset_key)
         decoded_message = sample_grid.decodeSkipPlowMethod(preset_key)
 
-    assert decoded_message.startswith(message)
+    # We can only encode message with capitals
+    assert decoded_message.startswith(message.upper())
     assert result_key == preset_key
 
 @pytest.mark.parametrize(
@@ -94,7 +95,8 @@ def test_add_message_skip_method_with_generated_key(sample_grid, message, max_sk
     grid = sample_grid
     key = grid.addMessageSkipMethod(message, max_skip=max_skip)
     decoded_message = grid.decodeSkipMethod(key)
-    assert decoded_message.startswith(message), f"Failed to encode/decode {message} with skip method"
+    # We can only encode message with capitals
+    assert decoded_message.startswith(message.upper()), f"Failed to encode/decode {message} with skip method"
     assert all(skip <= max_skip for skip in key), "Key contains skips larger than max_skip"
 
 def test_multiple_encode_no_preset_row_first(sample_grid):
@@ -145,7 +147,7 @@ def test_encode_message(sample_grid, message, encryption_type):
         result_key = sample_grid.addMessageSkipPlowMethod(message)
         decoded_message = sample_grid.decodeSkipPlowMethod(result_key)
 
-    assert decoded_message.startswith(message)
+    assert decoded_message.startswith(message.upper())
 
 @pytest.mark.parametrize("encryption_type", encryption_types)
 @pytest.mark.parametrize(

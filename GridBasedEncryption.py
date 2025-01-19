@@ -127,16 +127,17 @@ class EncryptionGrid:
 
         return True  # All characters can be encoded
 
-    def addMessageRowMethod(self, message: str, preset_key: Optional[List[int]] = None) -> List[int]:
+    def addMessageRowMethod(self, message_to_encode: str, preset_key: Optional[List[int]] = None) -> List[int]:
         """
         Add a message to the grid using the "Row" method. The row method implies that the key indicates what position
         of the row is to be used. A 0 indicates that the row is to be ignored. The keys "loop", so if you have 8 rows
         and a key of 4 the first and 5th row are referenced by the first number of the key (second and 6th for the
         second, etc..)
-        :param message: The message to be added
+        :param message_to_encode: The message to be added
         :param preset_key: If left to None, a key will be generated. Otherwise, the provided key will be used.
         :return: The key (if it was provided, it's the same key, otherwise it returns whatever was generated)
         """
+        message = message_to_encode.upper()
         if preset_key is not None:
             if not self.canEncodeRowMethod(message, preset_key):
                 raise Exception("Could not encode message with the given key and row method")
@@ -194,16 +195,17 @@ class EncryptionGrid:
 
         return key
 
-    def addMessageRowPlowMethod(self, message: str, preset_key: Optional[List[int]] = None) -> List[int]:
+    def addMessageRowPlowMethod(self, message_to_encode: str, preset_key: Optional[List[int]] = None) -> List[int]:
         """
         Add a message to the grid using the "Row-Plow" method. The Row-Plow method alternates the direction of traversal
         for each row (left-to-right on even rows, right-to-left on odd rows). Keys "loop," meaning the first key value
         is reused for rows beyond the key length.
 
-        :param message: The message to be added.
+        :param message_to_encode: The message to be added.
         :param preset_key: If left to None, a key will be generated. Otherwise, the provided key will be used.
         :return: The key (if it was provided, it's the same key; otherwise, it returns the dynamically generated key).
         """
+        message = message_to_encode.upper()
         if preset_key is not None:
             # If a preset key is provided, verify if the message can be encoded
             if not self.canEncodeRowPlowMethod(message, preset_key):
@@ -280,8 +282,6 @@ class EncryptionGrid:
 
         return key
 
-
-
     def _encodeMessageSkipWithFlatList(self, flat_list, preset_key, message):
         position = -1
         key_length = len(preset_key)
@@ -299,13 +299,14 @@ class EncryptionGrid:
 
         return preset_key
 
-    def addMessageSkipPlowMethod(self, message: str, max_skip: int = 5, preset_key: Optional[List[int]] = None) -> List[
+    def addMessageSkipPlowMethod(self, message_to_encode: str, max_skip: int = 5, preset_key: Optional[List[int]] = None) -> List[
         int]:
         """
         Adds a message to the grid using the Row-Plow Skip Method.
         Alternates row traversal direction (left-to-right for even rows, right-to-left for odd rows).
         Returns the key used for encoding the message.
         """
+        message = message_to_encode.upper()
         if preset_key is not None:
             # If a preset key is provided, verify if the message can be encoded
             if not self.canEncodeSkipPlowMethod(message, preset_key):
@@ -367,7 +368,7 @@ class EncryptionGrid:
 
         return key
 
-    def addMessageSkipMethod(self, message: str, max_skip: int = 5, preset_key: Optional[List[int]] = None) -> List[
+    def addMessageSkipMethod(self, message_to_encode: str, max_skip: int = 5, preset_key: Optional[List[int]] = None) -> List[
         int]:
         """
         Add a message to the grid using the "Skip" method. With the skip method you start at the first character of the
@@ -375,12 +376,13 @@ class EncryptionGrid:
         character of the grid is read. If the second number is also 0, you skip 0 characters (and thus, read the second
         one as well). If the third number is 1, you skip the third character and read the fourth one. If you read the end
         of your key, you start at the beginning again.
-        :param message: The message to be added
+        :param message_to_encode: The message to be added
         :param max_skip: How high can any number of the key become max. This only has an effect if the preset_key is
         None
         :param preset_key: If left to None, a key will be generated. Otherwise, the provided key will be used.
         :return: The key (if it was provided, it's the same key, otherwise it returns whatever was generated)
         """
+        message = message_to_encode.upper()
         if preset_key is not None:
             if not self.canEncodeSkipMethod(message, preset_key):
                 raise Exception("Could not encode message with the given key")
@@ -544,8 +546,8 @@ if __name__ == "__main__":
     viz = EncryptionGridVisualizer.EncryptionGridVisualizer(grid)
     viz.displayGrid()
     print()
-    preset_key = [1,2,1]
-    key = grid.addMessageSkipPlowMethod("THEREISAMESSAGEHERE", max_skip= 5, preset_key = preset_key)
+    preset_key = [1,2,3]
+    key = grid.addMessageSkipMethod("THEREISAMESSAGEHERE", max_skip= 5, preset_key = preset_key)
     print(key)
     viz.displayGrid()
     print(grid.decodeSkipPlowMethod(key))
