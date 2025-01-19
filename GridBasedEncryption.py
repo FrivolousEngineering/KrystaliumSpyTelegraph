@@ -14,6 +14,16 @@ class EncryptionGrid:
     def getLockedFields(self) -> Set[Tuple[int, int]]:
         return self._locked_fields
 
+    def _formatMessage(self, message: str) -> str:
+        formated_message = message.upper()
+        has_spaces = " " in message
+
+        formated_message = formated_message.replace(".", "")
+        formated_message = formated_message.replace(" ", ".")
+        if has_spaces:
+            formated_message = formated_message + "."
+        return formated_message
+
     def canEncodeRowMethod(self, message: str, key: List[int]) -> bool:
         """
         Checks if the given message can be encoded into the grid using the Row Method with the provided key.
@@ -137,7 +147,7 @@ class EncryptionGrid:
         :param preset_key: If left to None, a key will be generated. Otherwise, the provided key will be used.
         :return: The key (if it was provided, it's the same key, otherwise it returns whatever was generated)
         """
-        message = message_to_encode.upper()
+        message = self._formatMessage(message_to_encode)
         if preset_key is not None:
             if not self.canEncodeRowMethod(message, preset_key):
                 raise Exception("Could not encode message with the given key and row method")
@@ -205,7 +215,7 @@ class EncryptionGrid:
         :param preset_key: If left to None, a key will be generated. Otherwise, the provided key will be used.
         :return: The key (if it was provided, it's the same key; otherwise, it returns the dynamically generated key).
         """
-        message = message_to_encode.upper()
+        message = self._formatMessage(message_to_encode)
         if preset_key is not None:
             # If a preset key is provided, verify if the message can be encoded
             if not self.canEncodeRowPlowMethod(message, preset_key):
@@ -306,7 +316,7 @@ class EncryptionGrid:
         Alternates row traversal direction (left-to-right for even rows, right-to-left for odd rows).
         Returns the key used for encoding the message.
         """
-        message = message_to_encode.upper()
+        message = self._formatMessage(message_to_encode)
         if preset_key is not None:
             # If a preset key is provided, verify if the message can be encoded
             if not self.canEncodeSkipPlowMethod(message, preset_key):
@@ -382,7 +392,7 @@ class EncryptionGrid:
         :param preset_key: If left to None, a key will be generated. Otherwise, the provided key will be used.
         :return: The key (if it was provided, it's the same key, otherwise it returns whatever was generated)
         """
-        message = message_to_encode.upper()
+        message = self._formatMessage(message_to_encode)
         if preset_key is not None:
             if not self.canEncodeSkipMethod(message, preset_key):
                 raise Exception("Could not encode message with the given key")
@@ -435,11 +445,16 @@ class EncryptionGrid:
 
     @staticmethod
     def _fillGridRandomly(num_columns: int, num_rows: int) -> List[List[str]]:
-        """Generates a random grid of letters."""
-        return [
-            [random.choice(string.ascii_uppercase) for _ in range(num_columns)]
-            for _ in range(num_rows)
-        ]
+        """
+        Generates a random grid of letters, including spaces represented by '.'.
+        Spaces appear with a "natural" frequency.
+        """
+        # Define the characters and their relative frequencies
+        characters = string.ascii_uppercase + "."  # Include the space character
+        weights = [1] * 26 + [5]  # Weight of 5 for spaces, 1 for each letter
+
+        return  [random.choices(characters, weights=weights, k=num_columns) for _ in range(num_rows)]
+
 
     def decodeRowPlowMethod(self, key: List[int]) -> str:
         """
@@ -547,8 +562,8 @@ if __name__ == "__main__":
     viz.displayGrid()
     print()
     preset_key = [1,2,3]
-    key = grid.addMessageSkipMethod("THEREISAMESSAGEHERE", max_skip= 5, preset_key = preset_key)
+    key = grid.addMessageSkipMethod("THERE IS A MESSAGE HERE", max_skip= 5, preset_key = preset_key)
     print(key)
     viz.displayGrid()
-    print(grid.decodeSkipPlowMethod(key))
+    print(grid.decodeSkipMethod(key))
 
