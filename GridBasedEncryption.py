@@ -17,7 +17,7 @@ class EncryptionGrid:
     @staticmethod
     def _formatMessage(message: str) -> str:
         formated_message = message.upper()
-        
+
         # Strip out anything that isn't a space or uppercase
         formated_message = re.sub(r"[^A-Z ]", "", formated_message)
         if " " in message:
@@ -187,7 +187,8 @@ class EncryptionGrid:
         # Generate a looping key dynamically
         key: List[int] = []
         key_length = len(self._grid)
-
+        if key_length < len(message):
+            raise Exception("Could not fit message due to insufficient rows")
         for msg_idx, char in enumerate(message):
             row_idx = msg_idx % key_length
             available_columns = [
@@ -538,7 +539,7 @@ class EncryptionGrid:
 
 if __name__ == "__main__":
 
-    grid = EncryptionGrid(7,15)
+    grid = EncryptionGrid(5,2)
     '''grid._grid = [
         list("ABCDE"),
         list("FGHIJ"),
@@ -563,7 +564,7 @@ if __name__ == "__main__":
     viz.displayGrid()
     print()
     preset_key = [1,2,3]
-    key = grid.addMessageSkipMethod("THERE IS A MESSAGE HERE", max_skip= 5, preset_key = preset_key)
+    key = grid.addMessageRowMethod("BJOOOOOP")
     print(key)
     viz.displayGrid()
     print(grid.decodeSkipMethod(key))

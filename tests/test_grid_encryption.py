@@ -10,7 +10,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from GridBasedEncryption import EncryptionGrid
 
-sample_messages = ["HERP", "DERP", "BIKE", "SMILE", "word"]
+simple_messages = ["HERP", "DERP", "BIKE", "SMILE", "word"]
+longer_messages = ["A Word.", "Bjorp!", "Yep yep?", "This is a message"]
+combined_messages = simple_messages + longer_messages
 encryption_types = ["row", "row-plow", "skip", "skip-plow"]
 
 
@@ -21,25 +23,43 @@ def generate_fixed_grid(num_columns, num_rows):
         for _ in range(num_rows)
     ]
 
+
 @pytest.fixture
 def sample_grid():
     """Fixture to provide a consistent EncryptionGrid instance for tests."""
-    grid = EncryptionGrid(num_columns=5, num_rows=5)
+    grid = EncryptionGrid(num_columns=14, num_rows=15)
     grid._grid = [
-        list("ABCDE"),
-        list("FGHIJ"),
-        list("KLMNO"),
-        list("PQRST"),
-        list("UVWXY"),
+        ["Z", "M", "V", "J", "T", "P", "M"],
+        ["Y", "F", ".", "X", "Q", "H", "Y"],
+        ["C", "E", "D", "B", "D", "H", "Z"],
+        ["G", "L", "I", ".", "J", "S", "G"],
+        ["U", "I", "Q", "G", "S", "G", "Q"],
+        ["L", "Q", "O", ".", "B", "A", "E"],
+        [".", "Y", "A", ".", "O", "W", "N"],
+        ["K", ".", "Q", "R", "T", "R", "A"],
+        ["J", "E", "O", "N", "S", "A", "I"],
+        ["M", ".", "J", "F", "C", "O", "G"],
+        ["I", "U", "D", ".", "U", "I", "Y"],
+        ["M", "W", "M", "T", "M", "M", "C"],
+        ["C", "M", "C", ".", "J", "N", "L"],
+        ["X", "N", ".", "C", "M", "T", "M"],
+        ["X", ".", ".", "I", "P", "O", "P"],
+        ["Z", "M", "V", "J", "T", "P", "M"],
+        ["Y", "F", ".", "X", "Q", "H", "Y"],
+        ["C", "E", "D", "B", "D", "H", "Z"],
+        ["G", "L", "I", ".", "J", "S", "G"],
+        ["U", "I", "Q", "G", "S", "G", "Q"],
+        ["L", "Q", "O", ".", "B", "A", "E"],
+        [".", "Y", "A", ".", "O", "W", "N"],
+        ["K", ".", "Q", "R", "T", "R", "A"],
+        ["J", "E", "O", "N", "S", "A", "I"],
+        ["M", ".", "J", "F", "C", "O", "G"],
+        ["I", "U", "D", ".", "U", "I", "Y"],
+        ["M", "W", "M", "T", "M", "M", "C"],
+        ["C", "M", "C", ".", "J", "N", "L"],
+        ["X", "N", ".", "C", "M", "T", "M"],
+        ["X", ".", ".", "I", "P", "O", "P"],
     ]
-    '''
-    grid._grid = [
-        list("ABCDE"),
-        list("FGHIJ"),
-        list("KLMNO"),
-        list("PQRST"),
-        list("UVWXY"),
-    ]'''
     return grid
 
 # This creates a grid of tests (whoo python magic)
@@ -78,7 +98,7 @@ def test_add_message_row_method_with_preset_key(sample_grid, encryption_type, me
         decoded_message = sample_grid.decodeSkipPlowMethod(preset_key)
 
     # We can only encode message with capitals
-    assert decoded_message.startswith(message.upper())
+    assert decoded_message.startswith(EncryptionGrid._formatMessage(message))
     assert result_key == preset_key
 
 @pytest.mark.parametrize(
@@ -87,7 +107,7 @@ def test_add_message_row_method_with_preset_key(sample_grid, encryption_type, me
         ("HELLO", 1),
         ("WORLD", 2),
         ("BLOOP", 3),
-        ("HAI",   8) # (should never fail, as we have 25 chars and we allow a skip of max 8
+        ("HAI",   8)
     ],
 )
 def test_add_message_skip_method_with_generated_key(sample_grid, message, max_skip):
@@ -96,7 +116,7 @@ def test_add_message_skip_method_with_generated_key(sample_grid, message, max_sk
     key = grid.addMessageSkipMethod(message, max_skip=max_skip)
     decoded_message = grid.decodeSkipMethod(key)
     # We can only encode message with capitals
-    assert decoded_message.startswith(message.upper()), f"Failed to encode/decode {message} with skip method"
+    assert decoded_message.startswith(EncryptionGrid._formatMessage(message)), f"Failed to encode/decode {message} with skip method"
     assert all(skip <= max_skip for skip in key), "Key contains skips larger than max_skip"
 
 def test_multiple_encode_no_preset_row_first(sample_grid):
@@ -130,7 +150,7 @@ def test_encode_multiple_messages(sample_grid, messages, encryption_type):
 
 @pytest.mark.parametrize("encryption_type", encryption_types)
 @pytest.mark.parametrize(
-    "message", sample_messages
+    "message", combined_messages
 )
 def test_encode_message(sample_grid, message, encryption_type):
     decoded_message = ""
@@ -147,11 +167,11 @@ def test_encode_message(sample_grid, message, encryption_type):
         result_key = sample_grid.addMessageSkipPlowMethod(message)
         decoded_message = sample_grid.decodeSkipPlowMethod(result_key)
 
-    assert decoded_message.startswith(message.upper())
+    assert decoded_message.startswith(EncryptionGrid._formatMessage(message))
 
 @pytest.mark.parametrize("encryption_type", encryption_types)
 @pytest.mark.parametrize(
-    "message", sample_messages
+    "message", simple_messages
 )
 @pytest.mark.parametrize("num_columns, num_rows", [(6, 6), (10, 5), (5, 10), (10, 10)])
 def test_custom_grid_size(num_columns, num_rows, message, encryption_type):
@@ -178,13 +198,21 @@ def test_encoding_different_message_same_key_row(sample_grid):
         # This should fail, as these fields are already locked for the hello message
         sample_grid.addMessageRowMethod("WORLD", preset_key = [1, 2, 3, 4, 5])
 
-def test_encode_too_long_message_row(sample_grid):
+
+@pytest.mark.parametrize("num_rows,message", [
+    (2, "HER"),
+    (3, "DERP"),
+    (4, "HELLO"),
+])
+def test_encode_too_long_message_row(num_rows, message):
+    grid = EncryptionGrid(5, num_rows)
+
     with pytest.raises(Exception, match="Could not fit message"):
-        sample_grid.addMessageRowMethod("HERPIEDERPIEDERPANDMAYBESOMEMOREDERPLIKETHISISJUSTTOOMUCHMANYEAHITSWAYTOMUCH")
+        grid.addMessageRowMethod(message)
 
 def test_encode_too_long_message_skip(sample_grid):
     with pytest.raises(Exception, match="Could not fit message"):
-        sample_grid.addMessageSkipMethod("HERPIEDERPIEDERPANDMAYBESOMEMOREDERPLIKETHISISJUSTTOOMUCHMANYEAHITSWAYTOMUCH")
+        sample_grid.addMessageSkipMethod("HERPIEDERPIEDERPANDMAYBESOMEMOREDERPLIKETHISISJUSTTOOMUCHMANYEAHITSWAYTOMUCHHERPIEDERPIEDERPANDMAYBESOMEMOREDERPLIKETHISISJUSTTOOMUCHMANYEAHITSWAYTOMUCH")
 
 
 def test_encoding_row_fails_with_conflicting_preset_key(sample_grid):
