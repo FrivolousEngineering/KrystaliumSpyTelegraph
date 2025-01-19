@@ -1,7 +1,7 @@
 import random
 import string
 from typing import List, Tuple, Optional, Set
-
+import re
 
 class EncryptionGrid:
     def __init__(self, num_columns: int, num_rows: int):
@@ -14,14 +14,15 @@ class EncryptionGrid:
     def getLockedFields(self) -> Set[Tuple[int, int]]:
         return self._locked_fields
 
-    def _formatMessage(self, message: str) -> str:
+    @staticmethod
+    def _formatMessage(message: str) -> str:
         formated_message = message.upper()
-        has_spaces = " " in message
-
-        formated_message = formated_message.replace(".", "")
-        formated_message = formated_message.replace(" ", ".")
-        if has_spaces:
+        
+        # Strip out anything that isn't a space or uppercase
+        formated_message = re.sub(r"[^A-Z ]", "", formated_message)
+        if " " in message:
             formated_message = formated_message + "."
+        formated_message = formated_message.replace(" ", ".")
         return formated_message
 
     def canEncodeRowMethod(self, message: str, key: List[int]) -> bool:
