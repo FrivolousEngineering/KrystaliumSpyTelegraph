@@ -66,6 +66,15 @@ class EncryptionGrid:
         return True  # All characters can be encoded
 
     def addMessageRowMethod(self, message: str, preset_key: Optional[List[int]] = None) -> List[int]:
+        """
+        Add a message to the grid using the "Row" method. The row method implies that the key indicates what position
+        of the row is to be used. A 0 indicates that the row is to be ignored. The keys "loop", so if you have 8 rows
+        and a key of 4 the first and 5th row are referenced by the first number of the key (second and 6th for the
+        second, etc..)
+        :param message: The message to be added
+        :param preset_key: If left to None, a key will be generated. Otherwise, the provided key will be used.
+        :return: The key (if it was provided, it's the same key, otherwise it returns whatever was generated)
+        """
         if preset_key is not None:
             if not self.canEncodeRowMethod(message, preset_key):
                 raise Exception("Could not encode message with the given key and row method")
@@ -125,6 +134,18 @@ class EncryptionGrid:
 
     def addMessageSkipMethod(self, message: str, max_skip: int = 5, preset_key: Optional[List[int]] = None) -> List[
         int]:
+        """
+        Add a message to the grid using the "Skip" method. With the skip method you start at the first character of the
+        grid and you check the first key. This indicates how many characters you must skip. So if it is 0, the first
+        character of the grid is read. If the second number is also 0, you skip 0 characters (and thus, read the second
+        one as well). If the third number is 1, you skip the third character and read the fourth one. If you read the end
+        of your key, you start at the beginning again.
+        :param message: The message to be added
+        :param max_skip: How high can any number of the key become max. This only has an effect if the preset_key is
+        None
+        :param preset_key: If left to None, a key will be generated. Otherwise, the provided key will be used.
+        :return: The key (if it was provided, it's the same key, otherwise it returns whatever was generated)
+        """
         if preset_key is not None:
             if not self.canEncodeSkipMethod(message, preset_key):
                 raise Exception("Could not encode message with the given key")
@@ -235,9 +256,6 @@ class EncryptionGrid:
             message.append(flat_list[position])
 
         return ''.join(message)
-
-
-
 
 
 if __name__ == "__main__":
