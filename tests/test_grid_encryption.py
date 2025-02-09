@@ -27,39 +27,7 @@ def generate_fixed_grid(num_columns, num_rows):
 @pytest.fixture
 def sample_grid():
     """Fixture to provide a consistent EncryptionGrid instance for tests."""
-    grid = EncryptionGrid(num_columns=14, num_rows=15)
-    grid._grid = [
-        ["Z", "M", "V", "J", "T", "P", "M"],
-        ["Y", "F", ".", "X", "Q", "H", "Y"],
-        ["C", "E", "D", "B", "D", "H", "Z"],
-        ["G", "L", "I", ".", "J", "S", "G"],
-        ["U", "I", "Q", "G", "S", "G", "Q"],
-        ["L", "Q", "O", ".", "B", "A", "E"],
-        [".", "Y", "A", ".", "O", "W", "N"],
-        ["K", ".", "Q", "R", "T", "R", "A"],
-        ["J", "E", "O", "N", "S", "A", "I"],
-        ["M", ".", "J", "F", "C", "O", "G"],
-        ["I", "U", "D", ".", "U", "I", "Y"],
-        ["M", "W", "M", "T", "M", "M", "C"],
-        ["C", "M", "C", ".", "J", "N", "L"],
-        ["X", "N", ".", "C", "M", "T", "M"],
-        ["X", ".", ".", "I", "P", "O", "P"],
-        ["Z", "M", "V", "J", "T", "P", "M"],
-        ["Y", "F", ".", "X", "Q", "H", "Y"],
-        ["C", "E", "D", "B", "D", "H", "Z"],
-        ["G", "L", "I", ".", "J", "S", "G"],
-        ["U", "I", "Q", "G", "S", "G", "Q"],
-        ["L", "Q", "O", ".", "B", "A", "E"],
-        [".", "Y", "A", ".", "O", "W", "N"],
-        ["K", ".", "Q", "R", "T", "R", "A"],
-        ["J", "E", "O", "N", "S", "A", "I"],
-        ["M", ".", "J", "F", "C", "O", "G"],
-        ["I", "U", "D", ".", "U", "I", "Y"],
-        ["M", "W", "M", "T", "M", "M", "C"],
-        ["C", "M", "C", ".", "J", "N", "L"],
-        ["X", "N", ".", "C", "M", "T", "M"],
-        ["X", ".", ".", "I", "P", "O", "P"],
-    ]
+    grid = EncryptionGrid(num_columns=7, num_rows=30)
     return grid
 
 # This creates a grid of tests (whoo python magic)
