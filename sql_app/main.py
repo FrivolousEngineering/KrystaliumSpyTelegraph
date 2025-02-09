@@ -227,10 +227,9 @@ def postEncryptedMessage(message: schemas.createEncryptedMessage, db: Session = 
             grid = EncryptionGrid(10, 10)
 
 
-
     print(f"Used key id {primary_key_id} for primary and key id {secondary_key_id} for secondary")
     print(grid.getRawGrid())
-
-    # TODO: Actually store the message so it can be printed
-
-    pass
+    flat_grid_text = ""
+    for row in grid.getRawGrid():
+        flat_grid_text += " ".join(row) + "\n"
+    return crud.createGridMessage(db, message.primary_message, message.secondary_message, flat_grid_text, message.target)

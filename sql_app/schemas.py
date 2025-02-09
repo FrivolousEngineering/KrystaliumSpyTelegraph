@@ -56,7 +56,9 @@ class createEncryptedMessage(BaseModel):
     primary_group: str  # What group needs to be able to read the message? This is the *name* of that group!
     secondary_message: Optional[str] = Field(None) # Optional secondary "hidden" message that is encoded next to the real message (SNEAAAKYYYY)
     secondary_group: Optional[str] = Field(None) # Who needs to be able to read this??
-
+    target: Target
+    author: Optional[str] = Field(None, description="If a message is sent by GM, this should be filled in. Just there"
+                                                    "for bookkeeping!")
 
 class Message(MessageBase):
     id: int

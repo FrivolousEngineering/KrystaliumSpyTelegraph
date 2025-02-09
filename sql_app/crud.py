@@ -51,6 +51,18 @@ def createMessage(db: Session, message: schemas.MessageCreate) -> models.Message
     return db_message
 
 
+def createGridMessage(db: Session, primary_text, secondary_text, flat_grid_text: str, target: str) -> models.Message:
+
+    # Since these are only sent *to* the players, ive hardcoded it
+    db_message = models.Message(type="Grid", text=primary_text, secondary_text=secondary_text, encoded_text = flat_grid_text, direction = "incomming", target = target)
+
+    db_message.time_sent = datetime.now()
+    db.add(db_message)
+    db.commit()
+    db.refresh(db_message)
+    return db_message
+
+
 def getGroupByName(group_name: str, db: Session) -> Optional[models.EncryptionGroup]:
     return db.query(models.EncryptionGroup).filter(models.EncryptionGroup.name == group_name).first()
 
