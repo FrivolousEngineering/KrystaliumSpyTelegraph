@@ -15,6 +15,9 @@ class Message(Base):
     # Text contains the "real" message
     text: Mapped[str]
 
+    # Some message have a secondary message hidden in them
+    secondary_text: Mapped[Optional[str]]
+
     # Encoded text contains the cyphered text (where morse is considered a cypher!)
     encoded_text: Mapped[str]
 
@@ -23,6 +26,7 @@ class Message(Base):
     # Can be either "outgoing" (sent by players to somewhere) or "incoming" (So sent to the players)
     direction: Mapped[str]
 
+    # Can be either "Morse" or "Grid"
     type: Mapped[str]
 
     # In case of outgoing, where was the message sent to, in case of incoming, where was the message sent from
