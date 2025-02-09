@@ -144,7 +144,11 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
     else:
         all_secondary_group_keys = []
 
-    grid = EncryptionGrid(10, 10)
+    estimated_rows_needed = max(len(grid_msg.primary_message), len(grid_msg.secondary_message))
+    # About 10% of row messages is "skip this row" so make the entire thing a tad bit longer
+    estimated_rows_needed *= 1.1
+    estimated_rows_needed = int(estimated_rows_needed)
+    grid = EncryptionGrid(10, estimated_rows_needed)
     primary_key_id = None
     primary_encryption_type = ""
     primary_key = []
@@ -166,10 +170,10 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
             )
         except Exception:
             continue
-
+        is_succesfull = True
         if not grid_msg.secondary_message:
             break  # No secondary message; use current grid.
-        is_succesfull = True
+
         secondary_message_added = False
         for secondary_encryption_key in all_secondary_group_keys:
             secondary_key_id = secondary_encryption_key.id
@@ -190,7 +194,7 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
             break
         else:
             # Reset grid and try the next primary key.
-            grid = EncryptionGrid(10, 10)
+            grid = EncryptionGrid(10, estimated_rows_needed)
             is_succesfull = False
 
 
