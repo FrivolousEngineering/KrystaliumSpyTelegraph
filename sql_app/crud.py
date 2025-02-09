@@ -40,7 +40,7 @@ def markMessageAsPrinted(message_id: int, db: Session):
 def createMessage(db: Session, message: schemas.MessageCreate) -> models.Message:
     db_message = models.Message(**message.__dict__)
     db_message.time_sent = datetime.now()
-    if db_message.type == "Morse":
+    if db_message.type == "morse":
         db_message.encoded_text = MorseTranslator.textToMorse(db_message.text)
     else:
         print("UNKNOWN TYPE!")
@@ -54,7 +54,7 @@ def createMessage(db: Session, message: schemas.MessageCreate) -> models.Message
 def createGridMessage(db: Session, primary_text, secondary_text, flat_grid_text: str, target: str) -> models.Message:
 
     # Since these are only sent *to* the players, ive hardcoded it
-    db_message = models.Message(type="Grid", text=primary_text, secondary_text=secondary_text, encoded_text = flat_grid_text, direction = "incomming", target = target)
+    db_message = models.Message(type="grid", text=primary_text, secondary_text=secondary_text, encoded_text = flat_grid_text, direction = "Incoming", target = target)
 
     db_message.time_sent = datetime.now()
     db.add(db_message)

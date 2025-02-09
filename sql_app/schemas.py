@@ -9,9 +9,11 @@ class Direction(str, Enum):
     incoming: str = "Incoming"
     outgoing: str = "Outgoing"
 
+class MessageType(str, Enum):
+    morse: str = "morse"
+    grid: str = "grid"
 
 class EncryptionType(str, Enum):
-    morse: str = "morse"
     row: str = "row"
     row_plow: str = "row-plow"
     skip: str = "skip"
@@ -39,12 +41,12 @@ class Target(str, Enum):
 
 class MessageBase(BaseModel):
     text: str
-
+    secondary_text: Optional[str] = Field(None)
     direction: Direction
     target: Target
     author: Optional[str] = Field(None, description="If a message is sent by GM, this should be filled in. Just there"
                                                     "for bookkeeping!")
-    type: EncryptionType = "morse"
+    type: MessageType = "morse"
 
 
 class MessageCreate(MessageBase):

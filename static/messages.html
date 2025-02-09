@@ -68,6 +68,7 @@
         <thead>
             <tr>
                 <th>Text</th>
+                <th>Secondary message</th>
                 <th>Direction</th>
                 <th>Target</th>
                 <th id="timeHeader">Time Sent</th>
@@ -136,6 +137,7 @@
                 row.className = msg.direction.toLowerCase();
                 row.innerHTML = `
                     <td>${msg.text}</td>
+                    <td>${msg.secondary_text}</td>
                     <td>${msg.direction}</td>
                     <td>${msg.target}</td>
                     <td>${new Date(msg.time_sent).toLocaleString()}</td>
