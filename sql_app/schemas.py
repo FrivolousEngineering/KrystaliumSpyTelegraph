@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Literal, Union
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -40,17 +40,37 @@ class Target(str, Enum):
 
 
 class MessageBase(BaseModel):
-    text: str
-    secondary_text: Optional[str] = Field(None)
     direction: Direction
     target: Target
     author: Optional[str] = Field(None, description="If a message is sent by GM, this should be filled in. Just there"
                                                     "for bookkeeping!")
-    type: MessageType = "morse"
+
+class MorseMessage(MessageBase):
+    type: Literal[MessageType.morse] = MessageType.morse
+    text: str
 
 
-class MessageCreate(MessageBase):
-    text: Optional[str] = Field(None)
+# Message intended for grid (encrypted) messages
+class GridMessage(MessageBase):
+    type: Literal[MessageType.grid] = MessageType.grid
+    primary_message: str  # The decoded primary message
+    primary_group: str    # Name of the group that should be able to read it
+    secondary_message: Optional[str] = Field(
+        None, description="Optional secondary hidden message"
+    )
+    secondary_group: Optional[str] = Field(
+        None, description="If set, must be an existing group"
+    )
+
+
+# A discriminated union
+MessageCreate = Union[GridMessage, MorseMessage]
+
+class Message(MessageBase):
+    id: int
+    time_sent: datetime
+    time_printed: Optional[datetime]
+    encoded_text: str
 
 
 class createEncryptedMessage(BaseModel):
@@ -67,6 +87,8 @@ class Message(MessageBase):
     time_sent: datetime
     time_printed: Optional[datetime]
     encoded_text: str
+    text: str
+    secondary_text: Optional[str]
 
 
 class GroupBase(BaseModel):

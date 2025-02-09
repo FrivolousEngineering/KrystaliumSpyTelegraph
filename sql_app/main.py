@@ -116,8 +116,100 @@ def mark_message_as_printed(message_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/messages/", response_model=schemas.Message, responses={400: {"model": schemas.BadRequestError}}, tags = ["Messages"])
-def postMessage(message: schemas.MessageCreate, db: Session = Depends(get_db)):
-    return crud.createMessage(db, message)
+def post_message(message: schemas.MessageCreate, db: Session = Depends(get_db)):
+    if message.type == schemas.MessageType.morse:
+        # Call your existing plain message creation logic.
+        return crud.createMessage(db, message)
+
+    elif message.type == schemas.MessageType.grid:
+        # Grid encryption logic (from your existing endpoint)
+        # We cast `message` to GridMessage to satisfy type checkers.
+        grid_msg = message  # type: GridMessage
+
+        # Check primary group exists.
+        primary_group = crud.getGroupByName(grid_msg.primary_group, db)
+        if not primary_group:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Group with name '{grid_msg.primary_group}' doesn't exist"
+            )
+
+        # If secondary_group is provided, check it exists.
+        secondary_group = None
+        if grid_msg.secondary_group:
+            secondary_group = crud.getGroupByName(grid_msg.secondary_group, db)
+            if not secondary_group:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Group with name '{grid_msg.secondary_group}' doesn't exist"
+                )
+
+        # Retrieve and shuffle keys for primary (and secondary if applicable)
+        all_primary_group_keys = crud.getAllEncryptionKeysByGroup(primary_group.name, db)
+        random.shuffle(all_primary_group_keys)
+
+        if secondary_group:
+            all_secondary_group_keys = crud.getAllEncryptionKeysByGroup(secondary_group.name, db)
+            random.shuffle(all_secondary_group_keys)
+        else:
+            all_secondary_group_keys = []
+
+        grid = EncryptionGrid(10, 10)
+        primary_key_id = None
+        secondary_key_id = None
+
+        for primary_encryption_key in all_primary_group_keys:
+            primary_key_id = primary_encryption_key.id
+            try:
+                grid.addMessage(
+                    primary_encryption_key.encryption_type,
+                    grid_msg.primary_message,
+                    primary_encryption_key.key
+                )
+            except Exception:
+                continue
+
+            if not grid_msg.secondary_message:
+                break  # No secondary message; use current grid.
+
+            secondary_message_added = False
+            for secondary_encryption_key in all_secondary_group_keys:
+                secondary_key_id = secondary_encryption_key.id
+                try:
+                    grid.addMessage(
+                        secondary_encryption_key.encryption_type,
+                        grid_msg.secondary_message,
+                        secondary_encryption_key.key
+                    )
+                except Exception:
+                    continue
+                secondary_message_added = True
+                break
+
+            if secondary_message_added:
+                break
+            else:
+                # Reset grid and try the next primary key.
+                grid = EncryptionGrid(10, 10)
+
+        # (Optional) Log which keys were used.
+        print(f"Used key id {primary_key_id} for primary and key id {secondary_key_id} for secondary")
+        print(grid.getRawGrid())
+
+        # Flatten the grid into text.
+        flat_grid_text = "\n".join(" ".join(row) for row in grid.getRawGrid())
+        # Create and return the grid message.
+        return crud.createGridMessage(
+            db,
+            grid_msg.primary_message,
+            grid_msg.secondary_message,
+            flat_grid_text,
+            grid_msg.target
+        )
+
+    else:
+        # Should never get here because the union is discriminated by "type".
+        raise HTTPException(status_code=400, detail="Invalid message type")
 
 
 @app.post("/groups/", response_model=schemas.Group, tags = ["Groups"])
@@ -154,82 +246,3 @@ def createNewEncryptionKeyForGroup(group_name: str, key_type: str, db: Session =
 @app.get("/encryption_keys/", response_model=list[schemas.EncryptionKey], tags = ["Encryption Keys"])
 def getEncryptionKeys(db: Session = Depends(get_db)):
     return crud.getAllEncryptionKeys(db)
-
-
-@app.post("/messages/encrypted/", tags = ["Messages"])
-def postEncryptedMessage(message: schemas.createEncryptedMessage, db: Session = Depends(get_db)):
-    """
-    The normal post message is used to send morse code and responses from the players. The API is getting a bit messy,
-    but I figured it would be neater to have a specific endpoint for encrypted messages, as they don't share that much
-    with normal messages. This might get a complete overhaul later on.
-    """
-
-    primary_group = crud.getGroupByName(message.primary_group, db)
-    if not primary_group:
-        raise HTTPException(status_code=404, detail=f"Group with name '{message.primary_group}' doesn't exist")
-
-    secondary_group = crud.getGroupByName(message.secondary_group, db)
-    if not secondary_group and message.secondary_group:
-        # If secondary group is set it must exist
-        raise HTTPException(status_code=404, detail=f"Group with name '{message.secondary_group}' doesn't exist")
-
-    # Get all keys known to the primary group
-    all_primary_group_keys = crud.getAllEncryptionKeysByGroup(primary_group.name, db)
-    # Shuffle the list so that we get a nice spread of keys that are being used
-    random.shuffle(all_primary_group_keys)
-
-
-    if secondary_group:
-        all_secondary_group_keys = crud.getAllEncryptionKeysByGroup(secondary_group.name, db)
-        random.shuffle(all_secondary_group_keys)
-    else:
-        all_secondary_group_keys = []
-
-    grid = EncryptionGrid(10, 10)
-
-    primary_key_id = None
-    secondary_key_id = None
-    print("STARTING")
-    for primary_encryption_key in all_primary_group_keys:
-        primary_key_id = primary_encryption_key.id
-        print(f"attempting key id {primary_key_id} for primary")
-        try:
-            grid.addMessage(primary_encryption_key.encryption_type, message.primary_message, primary_encryption_key.key)
-        except Exception as e:
-            # Failed to add the message with that key. Continue!
-            continue
-
-        if not message.secondary_message:
-            # No secondary message set, we can break out
-            break
-
-        print("Attempting to add secondary message")
-
-        # Now we need to figure out if we can get the secondary message in there as well
-        secondary_message_added = False
-        for secondary_encryption_key in all_secondary_group_keys:
-            secondary_key_id = secondary_encryption_key.id
-            print(f"attempting key id {secondary_key_id} for Secondary")
-            try:
-                grid.addMessage(secondary_encryption_key.encryption_type, message.secondary_message, secondary_encryption_key.key)
-            except:
-                continue
-            print("Added secondary message")
-            secondary_message_added = True
-            break
-
-        if secondary_message_added:
-            break
-        else:
-            # We failed to add the secondary message. We need to reset the grid so that the primary message that
-            # was there gets removed
-            print("Resetting grid")
-            grid = EncryptionGrid(10, 10)
-
-
-    print(f"Used key id {primary_key_id} for primary and key id {secondary_key_id} for secondary")
-    print(grid.getRawGrid())
-    flat_grid_text = ""
-    for row in grid.getRawGrid():
-        flat_grid_text += " ".join(row) + "\n"
-    return crud.createGridMessage(db, message.primary_message, message.secondary_message, flat_grid_text, message.target)
