@@ -32,6 +32,6 @@ class Message(Base):
     # Has the message been printed already? If it's None it hasn't been printed yet
     time_printed: Mapped[Optional[datetime]]
 
-    # Human readable string to indicate who sent the message. This should only be used to indicate what SL sent
+    # Human-readable string to indicate who sent the message. This should only be used to indicate what SL sent
     # something to the players
     author: Mapped[Optional[str]]
