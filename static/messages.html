@@ -1,167 +1,319 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Message Viewer</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; cursor: pointer; }
-        th { background-color: #f4f4f4; }
-        .incoming { background-color: #e6ffe6; }
-        .outgoing { background-color: #ffe6e6; }
-        .filter, .message-form { margin: 10px 0; }
-        textarea { width: 100%; height: 100px; resize: vertical; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Message Viewer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; cursor: pointer; }
+    th { background-color: #f4f4f4; }
+    .incoming { background-color: #e6ffe6; }
+    .outgoing { background-color: #ffe6e6; }
+    .filter, .message-form { margin: 10px 0; }
+    textarea { width: 100%; height: 100px; resize: vertical; }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-    <h1>Messages</h1>
+  <h1>Messages</h1>
 
+  <div class="message-form">
+    <h2>Send Message</h2>
+    <!-- Message type selector -->
+    <label for="messageType">Message Type:</label>
+    <select id="messageType" onchange="toggleMessageForm()">
+      <option value="morse">Morse</option>
+      <option value="grid">Grid</option>
+    </select>
 
-    <div class="message-form">
-        <h2>Send Message</h2>
-        <label for="messageText">Text:</label>
-        <textarea id="messageText" required></textarea>
+    <!-- Fields common for both message types -->
+    <label for="targetSelect">Target:</label>
+    <select id="targetSelect">
+      <option value="FireControl">FireControl</option>
+      <option value="University">University</option>
+      <option value="CentralIntelligence">CentralIntelligence</option>
+      <option value="Relay">Relay</option>
+      <option value="Logistics">Logistics</option>
+      <option value="LocalCivilian">LocalCivilian</option>
+      <option value="LongRange">LongRange</option>
+    </select>
 
-        <label for="targetSelect">Target:</label>
-        <select id="targetSelect">
-            <option value="FireControl">FireControl</option>
-            <option value="University">University</option>
-            <option value="CentralIntelligence">CentralIntelligence</option>
-            <option value="Relay">Relay</option>
-            <option value="Logistics">Logistics</option>
-            <option value="LocalCivilian">LocalCivilian</option>
-            <option value="LongRange">LongRange</option>
-        </select>
+    <label for="author">Author:</label>
+    <input type="text" id="author" required />
 
-        <label for="author">Author:</label>
-        <input type="text" id="author" required>
-
-        <button onclick="sendMessage()">Send</button>
-    </div>
-    <h2>Sent & received messages</h2>
-    <div class="filter">
-        <label for="direction">Direction:</label>
-        <select id="direction">
-            <option value="">All</option>
-            <option value="Incoming">Incoming</option>
-            <option value="Outgoing">Outgoing</option>
-        </select>
-
-        <label for="target">Target:</label>
-        <select id="target">
-            <option value="">All</option>
-            <option value="FireControl">FireControl</option>
-            <option value="University">University</option>
-            <option value="CentralIntelligence">CentralIntelligence</option>
-            <option value="Relay">Relay</option>
-            <option value="Logistics">Logistics</option>
-            <option value="LocalCivilian">LocalCivilian</option>
-            <option value="LongRange">LongRange</option>
-        </select>
-
-        <button onclick="fetchMessages()">Filter</button>
+    <!-- Morse message fields -->
+    <div id="morseFields">
+      <label for="messageText">Text:</label>
+      <textarea id="messageText" required></textarea>
     </div>
 
-    <table id="messageTable">
-        <thead>
-            <tr>
-                <th>Text</th>
-                <th>Secondary message</th>
-                <th>Direction</th>
-                <th>Target</th>
-                <th id="timeHeader">Time Sent</th>
-                <th>Author</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Messages will be inserted here -->
-        </tbody>
-    </table>
+    <!-- Grid message fields -->
+    <div id="gridFields" class="hidden">
+      <label for="primaryMessage">Primary Message:</label>
+      <textarea id="primaryMessage" required></textarea>
 
-    <script>
-        let messages = [];
-        let sortAscending = false;
+      <label for="primaryGroup">Primary Group:</label>
+      <select id="primaryGroup"></select>
 
-        async function fetchMessages() {
-            const response = await fetch('/messages/');
-            messages = await response.json();
+      <label for="secondaryMessage">Secondary Message:</label>
+      <textarea id="secondaryMessage"></textarea>
 
-            sortMessages();  // Always sort when new data comes in
+      <label for="secondaryGroup">Secondary Group:</label>
+      <select id="secondaryGroup" onchange="toggleSecondaryMessageField()"></select>
+    </div>
+
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <h2>Sent & Received Messages</h2>
+  <div class="filter">
+    <label for="direction">Direction:</label>
+    <select id="direction">
+      <option value="">All</option>
+      <option value="Incoming">Incoming</option>
+      <option value="Outgoing">Outgoing</option>
+    </select>
+
+    <label for="target">Target:</label>
+    <select id="target">
+      <option value="">All</option>
+      <option value="FireControl">FireControl</option>
+      <option value="University">University</option>
+      <option value="CentralIntelligence">CentralIntelligence</option>
+      <option value="Relay">Relay</option>
+      <option value="Logistics">Logistics</option>
+      <option value="LocalCivilian">LocalCivilian</option>
+      <option value="LongRange">LongRange</option>
+    </select>
+
+    <button onclick="fetchMessages()">Filter</button>
+  </div>
+
+  <table id="messageTable">
+    <thead>
+      <tr>
+        <th>Text</th>
+        <th>Secondary Message</th>
+        <th>Direction</th>
+        <th>Target</th>
+        <th id="timeHeader">Time Sent</th>
+        <th>Author</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Messages will be inserted here -->
+    </tbody>
+  </table>
+
+  <script>
+    let messages = [];
+    let sortAscending = false;
+    let groups = [];  // Will store group data from the /groups/ endpoint
+
+    // Toggle between Morse and Grid form fields
+    function toggleMessageForm() {
+      const messageType = document.getElementById('messageType').value;
+      const morseFields = document.getElementById('morseFields');
+      const gridFields = document.getElementById('gridFields');
+
+      if (messageType === 'morse') {
+        morseFields.classList.remove('hidden');
+        gridFields.classList.add('hidden');
+      } else if (messageType === 'grid') {
+        gridFields.classList.remove('hidden');
+        morseFields.classList.add('hidden');
+        // Ensure the secondary message field is updated based on the secondary group selection
+        toggleSecondaryMessageField();
+      }
+    }
+
+    // Enable or disable the secondary message field based on the secondary group selection.
+    function toggleSecondaryMessageField() {
+      const secondaryGroupSelect = document.getElementById('secondaryGroup');
+      const secondaryMessageField = document.getElementById('secondaryMessage');
+      if (secondaryGroupSelect.value === '') {
+        secondaryMessageField.disabled = true;
+        secondaryMessageField.value = ''; // Optionally clear the field
+      } else {
+        secondaryMessageField.disabled = false;
+      }
+    }
+
+    // Fetch the list of groups and populate the dropdowns for grid messages.
+    async function populateGroupDropdowns() {
+      try {
+        const response = await fetch('/groups/');
+        groups = await response.json();
+
+        const primaryGroupSelect = document.getElementById('primaryGroup');
+        const secondaryGroupSelect = document.getElementById('secondaryGroup');
+
+        // Clear any existing options
+        primaryGroupSelect.innerHTML = '';
+        secondaryGroupSelect.innerHTML = '';
+
+        // Populate primaryGroupSelect (without a "None" option)
+        groups.forEach(group => {
+          const option = document.createElement('option');
+          option.value = group.name;
+          option.text = group.name;
+          primaryGroupSelect.appendChild(option);
+        });
+
+        // For secondaryGroupSelect, add a "None" option first...
+        const noneOption = document.createElement('option');
+        noneOption.value = '';
+        noneOption.text = 'None';
+        secondaryGroupSelect.appendChild(noneOption);
+
+        // ...and then add all the groups.
+        groups.forEach(group => {
+          const option = document.createElement('option');
+          option.value = group.name;
+          option.text = group.name;
+          secondaryGroupSelect.appendChild(option);
+        });
+        // Ensure the secondary message field reflects the default ("None")
+        toggleSecondaryMessageField();
+      } catch (error) {
+        console.error('Failed to fetch groups:', error);
+      }
+    }
+
+    // Fetch messages from the backend
+    async function fetchMessages() {
+      try {
+        const response = await fetch('/messages/');
+        messages = await response.json();
+        sortMessages(); // Always sort when new data comes in
+      } catch (error) {
+        console.error('Failed to fetch messages:', error);
+      }
+    }
+
+    // Send message based on the selected type.
+    async function sendMessage() {
+      const messageType = document.getElementById('messageType').value;
+      const target = document.getElementById('targetSelect').value;
+      const author = document.getElementById('author').value;
+
+      if (!author) {
+        alert('Author field is required. Please enter the author name.');
+        return;
+      }
+
+      let payload = {
+        target: target,
+        direction: 'Incoming',
+        author: author,
+        type: messageType  // include the type to help FastAPI discriminate the schema
+      };
+
+      if (messageType === 'morse') {
+        const text = document.getElementById('messageText').value;
+        if (!text) {
+          alert('Text is required for a morse message.');
+          return;
         }
+        payload.text = text;
+      } else if (messageType === 'grid') {
+        const primaryMessage = document.getElementById('primaryMessage').value;
+        const secondaryMessage = document.getElementById('secondaryMessage').value;
+        const primaryGroup = document.getElementById('primaryGroup').value;
+        const secondaryGroup = document.getElementById('secondaryGroup').value;
 
-        async function sendMessage() {
-            const text = document.getElementById('messageText').value;
-            const target = document.getElementById('targetSelect').value;
-            const author = document.getElementById('author').value;
-
-            if (!author) {
-                alert('Author field is required. Please enter the author name.');
-                return;
-            }
-
-            const payload = {
-                text: text,
-                target: target,
-                direction: 'Incoming',
-                author: author
-            };
-
-            const response = await fetch('/messages/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (response.ok) {
-                fetchMessages();
-                document.getElementById('messageText').value = '';
-                document.getElementById('author').value = '';
-            } else {
-                alert('Failed to send message');
-            }
+        if (!primaryMessage) {
+          alert('Primary Message is required for a grid message.');
+          return;
         }
-
-        function renderMessages(direction, target) {
-            const tableBody = document.querySelector('#messageTable tbody');
-            tableBody.innerHTML = '';
-
-            messages.filter(msg => {
-                return (direction === '' || msg.direction === direction) &&
-                       (target === '' || msg.target === target);
-            }).forEach(msg => {
-                const row = document.createElement('tr');
-                row.className = msg.direction.toLowerCase();
-                row.innerHTML = `
-                    <td>${msg.text}</td>
-                    <td>${msg.secondary_text}</td>
-                    <td>${msg.direction}</td>
-                    <td>${msg.target}</td>
-                    <td>${new Date(msg.time_sent).toLocaleString()}</td>
-                    <td>${msg.author}</td>
-                `;
-                tableBody.appendChild(row);
-            });
+        if (!primaryGroup) {
+          alert('Primary Group is required for a grid message.');
+          return;
         }
+        payload.primary_message = primaryMessage;
+        payload.secondary_message = secondaryMessage;
+        payload.primary_group = primaryGroup;
+        payload.secondary_group = secondaryGroup;
+      }
 
-        function flipSorting() {
-            sortAscending = !sortAscending;
-            sortMessages();
+      try {
+        const response = await fetch('/messages/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          fetchMessages();
+          // Clear fields based on type
+          if (messageType === 'morse') {
+            document.getElementById('messageText').value = '';
+          } else if (messageType === 'grid') {
+            document.getElementById('primaryMessage').value = '';
+            document.getElementById('secondaryMessage').value = '';
+          }
+          document.getElementById('author').value = '';
+        } else {
+          alert('Failed to send message');
         }
+      } catch (error) {
+        console.error('Error sending message:', error);
+        alert('An error occurred while sending the message.');
+      }
+    }
 
-        function sortMessages() {
-            messages.sort((a, b) => {
-                return sortAscending ? new Date(a.time_sent) - new Date(b.time_sent) : new Date(b.time_sent) - new Date(a.time_sent);
-            });
-            renderMessages(document.getElementById('direction').value, document.getElementById('target').value);
-        }
+    // Render messages into the table
+    function renderMessages(direction, target) {
+      const tableBody = document.querySelector('#messageTable tbody');
+      tableBody.innerHTML = '';
 
-        document.getElementById('timeHeader').addEventListener('click', flipSorting);
-        fetchMessages();
-        setInterval(fetchMessages, 10000);
-    </script>
+      messages
+        .filter(msg => {
+          return (direction === '' || msg.direction === direction) &&
+                 (target === '' || msg.target === target);
+        })
+        .forEach(msg => {
+          const row = document.createElement('tr');
+          row.className = msg.direction.toLowerCase();
+          row.innerHTML = `
+            <td>${msg.text || msg.primary_message || ''}</td>
+            <td>${msg.secondary_text || msg.secondary_message || ''}</td>
+            <td>${msg.direction}</td>
+            <td>${msg.target}</td>
+            <td>${new Date(msg.time_sent).toLocaleString()}</td>
+            <td>${msg.author || ''}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+    }
+
+    // Sort messages by time_sent
+    function sortMessages() {
+      messages.sort((a, b) => {
+        return sortAscending
+          ? new Date(a.time_sent) - new Date(b.time_sent)
+          : new Date(b.time_sent) - new Date(a.time_sent);
+      });
+      renderMessages(
+        document.getElementById('direction').value,
+        document.getElementById('target').value
+      );
+    }
+
+    function flipSorting() {
+      sortAscending = !sortAscending;
+      sortMessages();
+    }
+
+    document.getElementById('timeHeader').addEventListener('click', flipSorting);
+
+    // On initial load, fetch groups and messages
+    populateGroupDropdowns();
+    fetchMessages();
+    // Refresh messages every 10 seconds
+    setInterval(fetchMessages, 10000);
+  </script>
 </body>
 </html>
