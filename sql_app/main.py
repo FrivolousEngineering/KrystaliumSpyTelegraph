@@ -21,6 +21,8 @@ tags_metadata = [
 ]
 
 
+
+
 # Mount the swagger & redoc stuff locally.
 app = FastAPI(docs_url=None, redoc_url=None, openapi_tags=tags_metadata)
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -136,12 +138,18 @@ def getGroupByName(group_name:str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=f"Group with name '{group_name}' doesn't exist")
     return db_group
 
+@app.post("/groups/{group_name}/encryption_key/{key_type}", response_model=schemas.EncryptionKey, tags = ["Groups", "Encryption Keys"])
+def createNewEncryptionKeyForGroup(group_name: str, key_type: str, db: Session = Depends(get_db)):
+    db_group = crud.getGroupByName(group_name, db)
+    if not db_group:
+        raise HTTPException(status_code=404, detail=f"Group with name '{group_name}' doesn't exist")
 
-@app.post("/encryption-key/", response_model=schemas.EncryptionKey)
-def postEncryptionKey(encryption_key: schemas.EncryptionKeyCreate, db: Session = Depends(get_db)):
+    if not key_type in ["row", "row-plow", "skip", "skip-plow"]:
+        raise HTTPException(status_code=400, detail=f"Encryption key {key_type} is unknown.")
+
+    return crud.createEncryptionKeyForGroup(group_name, key_type, db)
     pass
-    '''
-    db_encryption_key = crud.getEncryptionKeyByName(encryption_key.name, db)
-    if db_encryption_key:
-        raise HTTPException(status_code=400, detail=f"Encryption key with name [{encryption_key.name}] already exists")
-    return crud.createEncryptionKey(encryption_key, db)'''
+
+@app.get("/encryption_keys/", response_model=list[schemas.EncryptionKey], tags = ["Encryption Keys"])
+def getEncryptionKeys(db: Session = Depends(get_db)):
+    return crud.getAllEncryptionKeys(db)

@@ -1,6 +1,6 @@
 from typing import Optional, List
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column, registry, relationship
 
@@ -66,7 +66,7 @@ class EncryptionKey(Base):
     encryption_type: Mapped[str] = mapped_column(String)
 
     # What is the actual key
-    key: Mapped[str] = mapped_column(String)
+    key: Mapped[List[int]] = mapped_column(JSON)
 
     # Foreign key linking this key to a specific encryption group.
     group_id: Mapped[int] = mapped_column(Integer, ForeignKey("encryption_groups.id"))

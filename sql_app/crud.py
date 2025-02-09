@@ -59,3 +59,19 @@ def createGroup(group: schemas.GroupCreate, db: Session) -> models.EncryptionGro
     db.commit()
     db.refresh(db_group)
     return db_group
+
+def getAllEncryptionKeys(db: Session) -> List[models.EncryptionKey]:
+    return db.query(models.EncryptionKey).all()
+
+
+def createEncryptionKeyForGroup(group_name: str, encryption_type: str, db: Session) -> models.EncryptionKey:
+    group = getGroupByName(group_name, db)
+    if not group:
+        raise Exception(f"Group with name '{group_name}' doesn't exist")
+
+    # TODO: Actually figure out a key that works. Now it's just hardcoded to be a specific one
+    encryption_key = models.EncryptionKey(group_id=group.id, encryption_type=encryption_type, key=[1, 2, 5])
+    db.add(encryption_key)
+    db.commit()
+    db.refresh(encryption_key)
+    return encryption_key

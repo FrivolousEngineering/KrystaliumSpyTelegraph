@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -10,8 +10,17 @@ class Direction(str, Enum):
     outgoing: str = "Outgoing"
 
 
-class MessageType(str, Enum):
-    morse: str = "Morse"
+class EncryptionType(str, Enum):
+    morse: str = "morse"
+    row: str = "row"
+    row_plow: str = "row-plow"
+    skip: str = "skip"
+    skip_plow: str = "skip-plow"
+
+    @staticmethod
+    def getIndex(value):
+        return list(EncryptionType).index(value)
+
 
 
 class Target(str, Enum):
@@ -35,7 +44,7 @@ class MessageBase(BaseModel):
     target: Target
     author: Optional[str] = Field(None, description="If a message is sent by GM, this should be filled in. Just there"
                                                     "for bookkeeping!")
-    type: MessageType = "Morse"
+    type: EncryptionType = "morse"
 
 
 class MessageCreate(MessageBase):
@@ -55,16 +64,24 @@ class GroupBase(BaseModel):
 class Group(GroupBase):
     id: int
 
+    class Config:
+        orm_mode = True
+
 class GroupCreate(GroupBase):
     pass
 
 
 class EncryptionKeyBase(BaseModel):
-    key: str
+    key: List[int]
     group_id: int
+    encryption_type: EncryptionType
 
 class EncryptionKey(EncryptionKeyBase):
     id: int
+    group: Group  # Nested group information
+
+    class Config:
+        orm_mode = True
 
 class EncryptionKeyCreate(EncryptionKeyBase):
     pass
