@@ -13,7 +13,7 @@ from .database import SessionLocal, engine
 import random
 models.Base.metadata.create_all(bind=engine)
 
-
+import logging
 
 tags_metadata = [
     {"name": "Messages", "description": ""},
@@ -21,8 +21,7 @@ tags_metadata = [
     {"name": "Encryption Keys", "description": ""},
 ]
 
-
-
+logger = logging.getLogger('uvicorn.error')
 
 # Mount the swagger & redoc stuff locally.
 app = FastAPI(docs_url=None, redoc_url=None, openapi_tags=tags_metadata)
@@ -68,7 +67,7 @@ def get_db():
         db.close()
 
 
-@app.get("/messages/", response_model=list[schemas.Message], tags = ["Messages"])
+@app.get("/messages/", response_model=list[schemas.Message], tags=["Messages"])
 def get_all_messages(db: Session = Depends(get_db)):
     """
     Get all messages in the database
@@ -76,7 +75,7 @@ def get_all_messages(db: Session = Depends(get_db)):
     return crud.getAllMessages(db)
 
 
-@app.get("/messages/unprinted/", response_model=list[schemas.Message], tags = ["Messages"])
+@app.get("/messages/unprinted/", response_model=list[schemas.Message], tags=["Messages"])
 def get_all_unprinted_messages(db: Session = Depends(get_db)):
     """
     Get all messages in the database
@@ -84,7 +83,8 @@ def get_all_unprinted_messages(db: Session = Depends(get_db)):
     return crud.getAllUnprintedMessages(db)
 
 
-@app.get("/messages/{message_id}/", response_model=schemas.Message, responses={404: {"model": schemas.NotFoundError}}, tags = ["Messages"])
+@app.get("/messages/{message_id}/", response_model=schemas.Message, responses={404: {"model": schemas.NotFoundError}},
+         tags=["Messages"])
 def get_message_by_id(message_id: int, db: Session = Depends(get_db)):
     db_message = crud.getMessageById(message_id, db)
     if not db_message:
@@ -93,7 +93,7 @@ def get_message_by_id(message_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/messages/{message_id}/reprint",
-          responses={400: {"model": schemas.BadRequestError}, 404: {"model": schemas.NotFoundError}}, tags = ["Messages"])
+          responses={400: {"model": schemas.BadRequestError}, 404: {"model": schemas.NotFoundError}}, tags=["Messages"])
 def reprint_message(message_id: int, db: Session = Depends(get_db)):
     db_message = crud.getMessageById(message_id, db)
     if not db_message:
@@ -106,7 +106,7 @@ def reprint_message(message_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/messages/{message_id}/mark_as_printed",
-          responses={400: {"model": schemas.BadRequestError}, 404: {"model": schemas.NotFoundError}}, tags = ["Messages"])
+          responses={400: {"model": schemas.BadRequestError}, 404: {"model": schemas.NotFoundError}}, tags=["Messages"])
 def mark_message_as_printed(message_id: int, db: Session = Depends(get_db)):
     db_message = crud.getMessageById(message_id, db)
     if not db_message:
@@ -171,7 +171,7 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
                 primary_encryption_key.key
             )
         except Exception as e:
-            print(f"failed to add for {primary_encryption_key.encryption_type}: {e}")
+            logger.error(f"failed to add for {primary_encryption_key.encryption_type}: {e}")
             continue
         is_successful = True
         if not grid_msg.secondary_message:
@@ -200,13 +200,12 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
             grid = EncryptionGrid(10, estimated_rows_needed)
             is_successful = False
 
-
     # Debug prints to check if the encoding went well
-    print(f"Attempting to decode primary message encoded with {primary_encryption_type} and key {primary_key}: {grid.decodeMethod(primary_encryption_type, primary_key)}")
+    logger.info(
+        f"Attempting to decode primary message encoded with {primary_encryption_type} and key {primary_key}: {grid.decodeMethod(primary_encryption_type, primary_key)}")
     if secondary_encryption_type:
-        print(
+        logger.info(
             f"Attempting to decode Secondary message encoded with {secondary_encryption_type} and key {secondary_key}: {grid.decodeMethod(secondary_encryption_type, secondary_key)}")
-
 
     if not is_successful:
         raise HTTPException(
@@ -214,8 +213,6 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
             detail=f"Could not encode provided messages with any combination. Consider changing the message or making them shorter"
         )
 
-    # (Optional) Log which keys were used.
-    print(f"Used key id {primary_key_id} for primary and key id {secondary_key_id} for secondary")
     # Flatten the grid into text.
     flat_grid_text = "\n".join(" ".join(row) for row in grid.getRawGrid())
     # Create and return the grid message.
@@ -229,7 +226,8 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
     )
 
 
-@app.post("/messages/", response_model=schemas.Message, responses={400: {"model": schemas.BadRequestError}}, tags = ["Messages"])
+@app.post("/messages/", response_model=schemas.Message, responses={400: {"model": schemas.BadRequestError}},
+          tags=["Messages"])
 def post_message(message: schemas.MessageCreate, db: Session = Depends(get_db)):
     if message.type == schemas.MessageType.morse:
         # Call your existing plain message creation logic.
@@ -241,7 +239,8 @@ def post_message(message: schemas.MessageCreate, db: Session = Depends(get_db)):
         # Should never get here because the union is discriminated by "type".
         raise HTTPException(status_code=400, detail="Invalid message type")
 
-@app.post("/groups/", response_model=schemas.Group, tags = ["Groups"])
+
+@app.post("/groups/", response_model=schemas.Group, tags=["Groups"])
 def postGroup(group: schemas.GroupCreate, db: Session = Depends(get_db)):
     db_group = crud.getGroupByName(group.name, db)
     if db_group:
@@ -249,18 +248,21 @@ def postGroup(group: schemas.GroupCreate, db: Session = Depends(get_db)):
     return crud.createGroup(group, db)
 
 
-@app.get("/groups/", response_model=list[schemas.Group], tags = ["Groups"])
+@app.get("/groups/", response_model=list[schemas.Group], tags=["Groups"])
 def getGroups(db: Session = Depends(get_db)):
     return crud.getAllGroups(db)
 
-@app.get("/groups/{group_name}", response_model=schemas.Group, tags = ["Groups"])
-def getGroupByName(group_name:str, db: Session = Depends(get_db)):
+
+@app.get("/groups/{group_name}", response_model=schemas.Group, tags=["Groups"])
+def getGroupByName(group_name: str, db: Session = Depends(get_db)):
     db_group = crud.getGroupByName(group_name, db)
     if not db_group:
         raise HTTPException(status_code=404, detail=f"Group with name '{group_name}' doesn't exist")
     return db_group
 
-@app.post("/groups/{group_name}/encryption_key/{key_type}", response_model=schemas.EncryptionKey, tags = ["Groups", "Encryption Keys"])
+
+@app.post("/groups/{group_name}/encryption_key/{key_type}", response_model=schemas.EncryptionKey,
+          tags=["Groups", "Encryption Keys"])
 def createNewEncryptionKeyForGroup(group_name: str, key_type: str, db: Session = Depends(get_db)):
     db_group = crud.getGroupByName(group_name, db)
     if not db_group:
@@ -272,6 +274,7 @@ def createNewEncryptionKeyForGroup(group_name: str, key_type: str, db: Session =
     return crud.createEncryptionKeyForGroup(group_name, key_type, db)
     pass
 
-@app.get("/encryption_keys/", response_model=list[schemas.EncryptionKey], tags = ["Encryption Keys"])
+
+@app.get("/encryption_keys/", response_model=list[schemas.EncryptionKey], tags=["Encryption Keys"])
 def getEncryptionKeys(db: Session = Depends(get_db)):
     return crud.getAllEncryptionKeys(db)
