@@ -125,9 +125,16 @@ def postGroup(group: schemas.GroupCreate, db: Session = Depends(get_db)):
     return crud.createGroup(group, db)
 
 
-@app.get("/groups/", response_model=list[schemas.Group],tags = ["Groups"])
+@app.get("/groups/", response_model=list[schemas.Group], tags = ["Groups"])
 def getGroups(db: Session = Depends(get_db)):
     return crud.getAllGroups(db)
+
+@app.get("/groups/{group_name}", response_model=schemas.Group, tags = ["Groups"])
+def getGroupByName(group_name:str, db: Session = Depends(get_db)):
+    db_group = crud.getGroupByName(group_name, db)
+    if not db_group:
+        raise HTTPException(status_code=404, detail=f"Group with name '{group_name}' doesn't exist")
+    return db_group
 
 
 @app.post("/encryption-key/", response_model=schemas.EncryptionKey)
