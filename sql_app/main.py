@@ -204,7 +204,7 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
     if not is_succesfull:
         raise HTTPException(
             status_code=400,
-            detail=f"Unable to encode primary message with key {primary_encryption_type} and key {primary_key} and secondary message with key {secondary_encryption_type} and key {secondary_key}"
+            detail=f"Could not encode provided messages with any combination. Consider changing the message or making them shorter"
         )
 
     # (Optional) Log which keys were used.

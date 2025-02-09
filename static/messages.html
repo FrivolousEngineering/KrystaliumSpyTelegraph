@@ -260,7 +260,9 @@
           }
           document.getElementById('author').value = '';
         } else {
-          alert('Failed to send message');
+          error_message = await response.json();
+          console.log(error_message.detail)
+          alert('Failed to send message:\n' + error_message.detail);
         }
       } catch (error) {
         console.error('Error sending message:', error);
