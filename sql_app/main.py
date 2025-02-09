@@ -116,9 +116,6 @@ def mark_message_as_printed(message_id: int, db: Session = Depends(get_db)):
 
 
 def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
-    # Grid encryption logic (from your existing endpoint)
-    # We cast `message` to GridMessage to satisfy type checkers.
-
     # Check primary group exists.
     primary_group = crud.getGroupByName(grid_msg.primary_group, db)
     if not primary_group:
@@ -149,10 +146,18 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
 
     grid = EncryptionGrid(10, 10)
     primary_key_id = None
+    primary_encryption_type = ""
+    primary_key = []
     secondary_key_id = None
+    secondary_key = []
+    secondary_encryption_type = ""
+
+    is_succesfull = False
 
     for primary_encryption_key in all_primary_group_keys:
         primary_key_id = primary_encryption_key.id
+        primary_key = primary_encryption_key.key
+        primary_encryption_type = primary_encryption_key.encryption_type
         try:
             grid.addMessage(
                 primary_encryption_key.encryption_type,
@@ -164,10 +169,12 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
 
         if not grid_msg.secondary_message:
             break  # No secondary message; use current grid.
-
+        is_succesfull = True
         secondary_message_added = False
         for secondary_encryption_key in all_secondary_group_keys:
             secondary_key_id = secondary_encryption_key.id
+            secondary_key = secondary_encryption_key.key
+            secondary_encryption_type = secondary_encryption_key.encryption_type
             try:
                 grid.addMessage(
                     secondary_encryption_key.encryption_type,
@@ -184,11 +191,24 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
         else:
             # Reset grid and try the next primary key.
             grid = EncryptionGrid(10, 10)
+            is_succesfull = False
+
+
+    # Debug prints to check if the encoding went well
+    print(f"Attempting to decode primary message encoded with {primary_encryption_type} and key {primary_key}: {grid.decodeMethod(primary_encryption_type, primary_key)}")
+    if secondary_encryption_type:
+        print(
+            f"Attempting to decode Secondary message encoded with {secondary_encryption_type} and key {secondary_key}: {grid.decodeMethod(secondary_encryption_type, secondary_key)}")
+
+
+    if not is_succesfull:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unable to encode primary message with key {primary_encryption_type} and key {primary_key} and secondary message with key {secondary_encryption_type} and key {secondary_key}"
+        )
 
     # (Optional) Log which keys were used.
     print(f"Used key id {primary_key_id} for primary and key id {secondary_key_id} for secondary")
-    print(grid.getRawGrid())
-
     # Flatten the grid into text.
     flat_grid_text = "\n".join(" ".join(row) for row in grid.getRawGrid())
     # Create and return the grid message.
@@ -209,7 +229,7 @@ def post_message(message: schemas.MessageCreate, db: Session = Depends(get_db)):
         return crud.createMessage(db, message)
 
     elif message.type == schemas.MessageType.grid:
-        _handleGridMessage(message, db)
+        return _handleGridMessage(message, db)
     else:
         # Should never get here because the union is discriminated by "type".
         raise HTTPException(status_code=400, detail="Invalid message type")

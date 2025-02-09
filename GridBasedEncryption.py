@@ -25,6 +25,17 @@ class EncryptionGrid:
         formated_message = formated_message.replace(" ", ".")
         return formated_message
 
+    def decodeMethod(self, method: str, key: List[int]) -> str:
+        if method == "row":
+            return self.decodeRowMethod(key)
+        elif method == "row-plow":
+            return self.decodeRowPlowMethod(key)
+        elif method == "skip":
+            return self.decodeSkipMethod(key)
+        elif method == "skip-plow":
+            return self.decodeSkipPlowMethod(key)
+        else:
+            return ""
 
     def canEncodeMethod(self, method: str, message: str, key: List[int]) -> bool:
         if method == "row":
