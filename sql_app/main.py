@@ -165,7 +165,13 @@ def postEncryptedMessage(message: schemas.createEncryptedMessage, db: Session = 
     """
 
     primary_group = crud.getGroupByName(message.primary_group, db)
+    if not primary_group:
+        raise HTTPException(status_code=404, detail=f"Group with name '{message.primary_group}' doesn't exist")
+
     secondary_group = crud.getGroupByName(message.secondary_group, db)
+    if not secondary_group and message.secondary_group:
+        # If secondary group is set it must exist
+        raise HTTPException(status_code=404, detail=f"Group with name '{message.secondary_group}' doesn't exist")
 
     # Get all keys known to the primary group
     all_primary_group_keys = crud.getAllEncryptionKeysByGroup(primary_group.name, db)
