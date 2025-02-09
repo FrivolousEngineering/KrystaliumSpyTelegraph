@@ -49,6 +49,8 @@ def createMessage(db: Session, message: schemas.MessageCreate) -> models.Message
 def getGroupByName(group_name: str, db: Session) -> Optional[models.EncryptionGroup]:
     return db.query(models.EncryptionGroup).filter(models.EncryptionGroup.name == group_name).first()
 
+def getAllGroups(db: Session) -> List[models.EncryptionGroup]:
+    return db.query(models.EncryptionGroup).all()
 
 
 def createGroup(group: schemas.GroupCreate, db: Session) -> models.EncryptionGroup:

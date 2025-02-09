@@ -114,3 +114,18 @@ def postGroup(group: schemas.GroupCreate, db: Session = Depends(get_db)):
     if db_group:
         raise HTTPException(status_code=400, detail=f"Group with name [{group.name}] already exists")
     return crud.createGroup(group, db)
+
+
+@app.get("/groups/", response_model=list[schemas.Group])
+def getGroups(db: Session = Depends(get_db)):
+    return crud.getAllGroups(db)
+
+
+@app.post("/encryption-key/", response_model=schemas.EncryptionKey)
+def postEncryptionKey(encryption_key: schemas.EncryptionKeyCreate, db: Session = Depends(get_db)):
+    pass
+    '''
+    db_encryption_key = crud.getEncryptionKeyByName(encryption_key.name, db)
+    if db_encryption_key:
+        raise HTTPException(status_code=400, detail=f"Encryption key with name [{encryption_key.name}] already exists")
+    return crud.createEncryptionKey(encryption_key, db)'''

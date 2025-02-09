@@ -58,6 +58,17 @@ class Group(GroupBase):
 class GroupCreate(GroupBase):
     pass
 
+
+class EncryptionKeyBase(BaseModel):
+    key: str
+    group_id: int
+
+class EncryptionKey(EncryptionKeyBase):
+    id: int
+
+class EncryptionKeyCreate(EncryptionKeyBase):
+    pass
+
 class BadRequestError(BaseModel):
     detail: str
 
