@@ -7,9 +7,10 @@ from fastapi.openapi.docs import (
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
+from GridBasedEncryption import EncryptionGrid
 from . import crud, models, schemas
 from .database import SessionLocal, engine
-
+import random
 models.Base.metadata.create_all(bind=engine)
 
 
@@ -153,3 +154,77 @@ def createNewEncryptionKeyForGroup(group_name: str, key_type: str, db: Session =
 @app.get("/encryption_keys/", response_model=list[schemas.EncryptionKey], tags = ["Encryption Keys"])
 def getEncryptionKeys(db: Session = Depends(get_db)):
     return crud.getAllEncryptionKeys(db)
+
+
+@app.post("/messages/encrypted/", tags = ["Messages"])
+def postEncryptedMessage(message: schemas.createEncryptedMessage, db: Session = Depends(get_db)):
+    """
+    The normal post message is used to send morse code and responses from the players. The API is getting a bit messy,
+    but I figured it would be neater to have a specific endpoint for encrypted messages, as they don't share that much
+    with normal messages. This might get a complete overhaul later on.
+    """
+
+    primary_group = crud.getGroupByName(message.primary_group, db)
+    secondary_group = crud.getGroupByName(message.secondary_group, db)
+
+    # Get all keys known to the primary group
+    all_primary_group_keys = crud.getAllEncryptionKeysByGroup(primary_group.name, db)
+    # Shuffle the list so that we get a nice spread of keys that are being used
+    random.shuffle(all_primary_group_keys)
+
+
+    if secondary_group:
+        all_secondary_group_keys = crud.getAllEncryptionKeysByGroup(secondary_group.name, db)
+        random.shuffle(all_secondary_group_keys)
+    else:
+        all_secondary_group_keys = []
+
+    grid = EncryptionGrid(10, 10)
+
+    primary_key_id = None
+    secondary_key_id = None
+    print("STARTING")
+    for primary_encryption_key in all_primary_group_keys:
+        primary_key_id = primary_encryption_key.id
+        print(f"attempting key id {primary_key_id} for primary")
+        try:
+            grid.addMessage(primary_encryption_key.encryption_type, message.primary_message, primary_encryption_key.key)
+        except Exception as e:
+            # Failed to add the message with that key. Continue!
+            continue
+
+        if not message.secondary_message:
+            # No secondary message set, we can break out
+            break
+
+        print("Attempting to add secondary message")
+
+        # Now we need to figure out if we can get the secondary message in there as well
+        secondary_message_added = False
+        for secondary_encryption_key in all_secondary_group_keys:
+            secondary_key_id = secondary_encryption_key.id
+            print(f"attempting key id {secondary_key_id} for Secondary")
+            try:
+                grid.addMessage(secondary_encryption_key.encryption_type, message.secondary_message, secondary_encryption_key.key)
+            except:
+                continue
+            print("Added secondary message")
+            secondary_message_added = True
+            break
+
+        if secondary_message_added:
+            break
+        else:
+            # We failed to add the secondary message. We need to reset the grid so that the primary message that
+            # was there gets removed
+            print("Resetting grid")
+            grid = EncryptionGrid(10, 10)
+
+
+
+    print(f"Used key id {primary_key_id} for primary and key id {secondary_key_id} for secondary")
+    print(grid.getRawGrid())
+
+    # TODO: Actually store the message so it can be printed
+
+    pass

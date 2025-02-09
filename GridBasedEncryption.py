@@ -25,6 +25,33 @@ class EncryptionGrid:
         formated_message = formated_message.replace(" ", ".")
         return formated_message
 
+
+    def canEncodeMethod(self, method: str, message: str, key: List[int]) -> bool:
+        if method == "row":
+            return self.canEncodeRowMethod(message, key)
+        elif method == "row-plow":
+            return self.canEncodeRowPlowMethod(message, key)
+        elif method == "skip":
+            return self.canEncodeSkipMethod(message, key)
+        elif method == "skip-plow":
+            return self.canEncodeSkipPlowMethod(message, key)
+        else:
+            print("Should not happen!", method)
+            return False
+
+    def addMessage(self, method, message_to_encode: str, preset_key: Optional[List[int]] = None) -> List[int]:
+        if method == "row":
+            return self.addMessageRowMethod(message_to_encode, preset_key)
+        elif method == "row-plow":
+            return self.addMessageRowPlowMethod(message_to_encode, preset_key)
+        elif method == "skip":
+            return self.addMessageSkipMethod(message_to_encode, preset_key = preset_key)
+        elif method == "skip-plow":
+            return self.addMessageSkipPlowMethod(message_to_encode, preset_key = preset_key)
+        else:
+            print("Should not happen!")
+            return []
+
     def canEncodeRowMethod(self, message: str, key: List[int]) -> bool:
         """
         Checks if the given message can be encoded into the grid using the Row Method with the provided key.
@@ -251,8 +278,6 @@ class EncryptionGrid:
 
                 message_idx += 1
 
-            if message_idx < len(message):
-                raise Exception("Not all characters could be encoded with the given key")
 
             return preset_key
 

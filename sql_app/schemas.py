@@ -51,6 +51,13 @@ class MessageCreate(MessageBase):
     text: Optional[str] = Field(None)
 
 
+class createEncryptedMessage(BaseModel):
+    primary_message: str  # The actual message that is the result of decoding something
+    primary_group: str  # What group needs to be able to read the message? This is the *name* of that group!
+    secondary_message: Optional[str] = Field(None) # Optional secondary "hidden" message that is encoded next to the real message (SNEAAAKYYYY)
+    secondary_group: Optional[str] = Field(None) # Who needs to be able to read this??
+
+
 class Message(MessageBase):
     id: int
     time_sent: datetime

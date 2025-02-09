@@ -69,6 +69,13 @@ def getAllEncryptionKeys(db: Session) -> List[models.EncryptionKey]:
     return db.query(models.EncryptionKey).all()
 
 
+def getAllEncryptionKeysByGroup(group_name: str, db: Session) -> List[models.EncryptionKey]:
+    return (
+        db.query(models.EncryptionKey)
+        .filter(models.EncryptionKey.group_id == getGroupByName(group_name, db).id)
+        .all()
+    )
+
 def createEncryptionKeyForGroup(group_name: str, encryption_type: str, db: Session) -> models.EncryptionKey:
     group = getGroupByName(group_name, db)
     if not group:
