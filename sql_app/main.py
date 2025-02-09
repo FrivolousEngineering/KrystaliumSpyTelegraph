@@ -12,8 +12,17 @@ from .database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
+
+
+tags_metadata = [
+    {"name": "Messages", "description": ""},
+    {"name": "Groups", "description": ""},
+    {"name": "Encryption Keys", "description": ""},
+]
+
+
 # Mount the swagger & redoc stuff locally.
-app = FastAPI(docs_url=None, redoc_url=None)
+app = FastAPI(docs_url=None, redoc_url=None, openapi_tags=tags_metadata)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -56,7 +65,7 @@ def get_db():
         db.close()
 
 
-@app.get("/messages/", response_model=list[schemas.Message])
+@app.get("/messages/", response_model=list[schemas.Message], tags = ["Messages"])
 def get_all_messages(db: Session = Depends(get_db)):
     """
     Get all messages in the database
@@ -64,7 +73,7 @@ def get_all_messages(db: Session = Depends(get_db)):
     return crud.getAllMessages(db)
 
 
-@app.get("/messages/unprinted/", response_model=list[schemas.Message])
+@app.get("/messages/unprinted/", response_model=list[schemas.Message], tags = ["Messages"])
 def get_all_unprinted_messages(db: Session = Depends(get_db)):
     """
     Get all messages in the database
@@ -72,7 +81,7 @@ def get_all_unprinted_messages(db: Session = Depends(get_db)):
     return crud.getAllUnprintedMessages(db)
 
 
-@app.get("/messages/{message_id}/", response_model=schemas.Message, responses={404: {"model": schemas.NotFoundError}})
+@app.get("/messages/{message_id}/", response_model=schemas.Message, responses={404: {"model": schemas.NotFoundError}}, tags = ["Messages"])
 def get_message_by_id(message_id: int, db: Session = Depends(get_db)):
     db_message = crud.getMessageById(message_id, db)
     if not db_message:
@@ -81,7 +90,7 @@ def get_message_by_id(message_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/messages/{message_id}/reprint",
-          responses={400: {"model": schemas.BadRequestError}, 404: {"model": schemas.NotFoundError}})
+          responses={400: {"model": schemas.BadRequestError}, 404: {"model": schemas.NotFoundError}}, tags = ["Messages"])
 def reprint_message(message_id: int, db: Session = Depends(get_db)):
     db_message = crud.getMessageById(message_id, db)
     if not db_message:
@@ -94,7 +103,7 @@ def reprint_message(message_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/messages/{message_id}/mark_as_printed",
-          responses={400: {"model": schemas.BadRequestError}, 404: {"model": schemas.NotFoundError}})
+          responses={400: {"model": schemas.BadRequestError}, 404: {"model": schemas.NotFoundError}}, tags = ["Messages"])
 def mark_message_as_printed(message_id: int, db: Session = Depends(get_db)):
     db_message = crud.getMessageById(message_id, db)
     if not db_message:
@@ -103,12 +112,12 @@ def mark_message_as_printed(message_id: int, db: Session = Depends(get_db)):
     crud.markMessageAsPrinted(message_id, db)
 
 
-@app.post("/messages/", response_model=schemas.Message, responses={400: {"model": schemas.BadRequestError}})
+@app.post("/messages/", response_model=schemas.Message, responses={400: {"model": schemas.BadRequestError}}, tags = ["Messages"])
 def postMessage(message: schemas.MessageCreate, db: Session = Depends(get_db)):
     return crud.createMessage(db, message)
 
 
-@app.post("/groups/", response_model=schemas.Group)
+@app.post("/groups/", response_model=schemas.Group, tags = ["Groups"])
 def postGroup(group: schemas.GroupCreate, db: Session = Depends(get_db)):
     db_group = crud.getGroupByName(group.name, db)
     if db_group:
@@ -116,7 +125,7 @@ def postGroup(group: schemas.GroupCreate, db: Session = Depends(get_db)):
     return crud.createGroup(group, db)
 
 
-@app.get("/groups/", response_model=list[schemas.Group])
+@app.get("/groups/", response_model=list[schemas.Group],tags = ["Groups"])
 def getGroups(db: Session = Depends(get_db)):
     return crud.getAllGroups(db)
 
