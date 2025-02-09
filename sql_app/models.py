@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column, registry, relationship
 
@@ -35,3 +35,41 @@ class Message(Base):
     # Human-readable string to indicate who sent the message. This should only be used to indicate what SL sent
     # something to the players
     author: Mapped[Optional[str]]
+
+
+class EncryptionGroup(Base):
+    """
+    This is to keep track of what players have what keys.
+    A group will have at least a single player in it and has a
+    number of EncryptionKeys associated with it.
+    """
+    __tablename__ = "encryption_groups"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, unique=True) # Human-readable name of the group (eg: "Spies", "Double-agents")
+
+    # Link to a list of EncryptionKeys that belong to this group.
+    encryption_keys: Mapped[List["EncryptionKey"]] = relationship(
+        "EncryptionKey", back_populates="group", cascade="all, delete-orphan"
+    )
+
+
+class EncryptionKey(Base):
+    """
+    A single encryption key.
+    """
+    __tablename__ = "encryption_keys"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    # There are several encryption types. Which of the types is it?
+    encryption_type: Mapped[str] = mapped_column(String)
+
+    # What is the actual key
+    key: Mapped[str] = mapped_column(String)
+
+    # Foreign key linking this key to a specific encryption group.
+    group_id: Mapped[int] = mapped_column(Integer, ForeignKey("encryption_groups.id"))
+
+    # Link back to the parent group.
+    group: Mapped["EncryptionGroup"] = relationship("EncryptionGroup", back_populates="encryption_keys")

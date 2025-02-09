@@ -106,3 +106,11 @@ def mark_message_as_printed(message_id: int, db: Session = Depends(get_db)):
 @app.post("/messages/", response_model=schemas.Message, responses={400: {"model": schemas.BadRequestError}})
 def postMessage(message: schemas.MessageCreate, db: Session = Depends(get_db)):
     return crud.createMessage(db, message)
+
+
+@app.post("/groups/", response_model=schemas.Group)
+def postGroup(group: schemas.GroupCreate, db: Session = Depends(get_db)):
+    db_group = crud.getGroupByName(group.name, db)
+    if db_group:
+        raise HTTPException(status_code=400, detail=f"Group with name [{group.name}] already exists")
+    return crud.createGroup(group, db)

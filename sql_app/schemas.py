@@ -49,6 +49,15 @@ class Message(MessageBase):
     encoded_text: str
 
 
+class GroupBase(BaseModel):
+    name: str
+
+class Group(GroupBase):
+    id: int
+
+class GroupCreate(GroupBase):
+    pass
+
 class BadRequestError(BaseModel):
     detail: str
 

@@ -44,3 +44,16 @@ def createMessage(db: Session, message: schemas.MessageCreate) -> models.Message
     db.commit()
     db.refresh(db_message)
     return db_message
+
+
+def getGroupByName(group_name: str, db: Session) -> Optional[models.EncryptionGroup]:
+    return db.query(models.EncryptionGroup).filter(models.EncryptionGroup.name == group_name).first()
+
+
+
+def createGroup(group: schemas.GroupCreate, db: Session) -> models.EncryptionGroup:
+    db_group = models.EncryptionGroup(**group.__dict__)
+    db.add(db_group)
+    db.commit()
+    db.refresh(db_group)
+    return db_group
