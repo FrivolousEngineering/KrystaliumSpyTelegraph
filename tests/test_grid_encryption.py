@@ -188,7 +188,7 @@ def test_multiple_encode_no_preset_skip_first(sample_grid):
 
 def test_encoding_different_message_same_key_skip(sample_grid):
     sample_grid.addMessageSkipMethod("HELLO", preset_key = [0, 0, 0, 0, 0])
-    with pytest.raises(Exception, match="Could not encode message with the given key"):
+    with pytest.raises(Exception, match="Could not encode message with key"):
         # This should fail, as these fields are already locked for the hello message
         sample_grid.addMessageSkipMethod("WORLD", preset_key = [0, 0, 0, 0, 0])
 

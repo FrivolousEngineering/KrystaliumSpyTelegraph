@@ -189,7 +189,7 @@ class EncryptionGrid:
         message = self._formatMessage(message_to_encode)
         if preset_key is not None:
             if not self.canEncodeRowMethod(message, preset_key):
-                raise Exception("Could not encode message with the given key and row method")
+                raise Exception(f"Could not encode message with the given key '{preset_key}' and row method")
 
             # Message can be encoded with the given key
             key_length = len(preset_key)
@@ -216,9 +216,6 @@ class EncryptionGrid:
                     self._locked_fields.add((row_idx, col_idx))
 
                 message_idx += 1  # Move to the next character in the message
-
-            if message_idx < len(message):
-                raise Exception("Not all characters could be encoded with the given key")
 
             return preset_key
 
@@ -358,7 +355,7 @@ class EncryptionGrid:
         if preset_key is not None:
             # If a preset key is provided, verify if the message can be encoded
             if not self.canEncodeSkipPlowMethod(message, preset_key):
-                raise Exception("Could not encode message with the given key and Row-Plow Skip method")
+                raise Exception(f"Could not encode message with the given key '{preset_key}'and Row-Plow Skip method")
 
             # Encode the message using the preset key
             flat_list = [
@@ -433,7 +430,7 @@ class EncryptionGrid:
         message = self._formatMessage(message_to_encode)
         if preset_key is not None:
             if not self.canEncodeSkipMethod(message, preset_key):
-                raise Exception("Could not encode message with the given key")
+                raise Exception(f"Could not encode message with key {preset_key} using skip method")
 
             flat_list = [
                 (row_idx, col_idx)
