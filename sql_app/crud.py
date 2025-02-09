@@ -49,7 +49,7 @@ def createMessage(db: Session, message: schemas.MorseMessage) -> models.Message:
     db.refresh(db_message)
     return db_message
 
-def createGridMessage(db: Session, primary_text, secondary_text, flat_grid_text: str, target: str) -> models.Message:
+def createGridMessage(db: Session, primary_text, secondary_text, flat_grid_text: str, target: str, author: str) -> models.Message:
     db_message = models.Message(
         type="grid",
         text=primary_text,
@@ -57,7 +57,8 @@ def createGridMessage(db: Session, primary_text, secondary_text, flat_grid_text:
         encoded_text=flat_grid_text,
         direction="Incoming",
         target=target,
-        time_sent=datetime.now()
+        time_sent=datetime.now(),
+        author=author
     )
     db.add(db_message)
     db.commit()

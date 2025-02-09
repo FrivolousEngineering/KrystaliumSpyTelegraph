@@ -204,7 +204,8 @@ def post_message(message: schemas.MessageCreate, db: Session = Depends(get_db)):
             grid_msg.primary_message,
             grid_msg.secondary_message,
             flat_grid_text,
-            grid_msg.target
+            grid_msg.target,
+            message.author
         )
 
     else:
