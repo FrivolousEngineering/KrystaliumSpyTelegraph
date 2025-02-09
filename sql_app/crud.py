@@ -6,7 +6,12 @@ from MorseTranslator import MorseTranslator
 from . import models, schemas
 
 from datetime import datetime
-
+import random
+# Some hardcoded stuff regarding encryption. I know, not the greatest. Sue me
+grid_width = 10
+min_code_length = 6
+max_code_length = 10
+max_skip_value = 9
 
 def getAllMessages(db: Session):
     return db.query(models.Message).all()
@@ -70,8 +75,36 @@ def createEncryptionKeyForGroup(group_name: str, encryption_type: str, db: Sessi
         raise Exception(f"Group with name '{group_name}' doesn't exist")
 
     # TODO: Actually figure out a key that works. Now it's just hardcoded to be a specific one
-    encryption_key = models.EncryptionKey(group_id=group.id, encryption_type=encryption_type, key=[1, 2, 5])
+    key_to_use = []
+    while True:
+        key_to_use = generateRandomKey(encryption_type)
+        if validateKeyIsUnique(encryption_type, key_to_use, db):
+            break
+        else:
+            print("key wasn't unique, trying again!")
+    encryption_key = models.EncryptionKey(group_id=group.id, encryption_type=encryption_type, key=key_to_use)
     db.add(encryption_key)
     db.commit()
     db.refresh(encryption_key)
     return encryption_key
+
+
+def generateRandomKey(encryption_type: str) -> List[int]:
+    key_length = random.randint(min_code_length, max_code_length)
+    if "row" in encryption_type:
+        key = [random.randint(0, grid_width) for _ in range(key_length)]
+    else:
+        # Skip encryption!
+        key = [random.randint(0, max_skip_value) for _ in range(key_length)]
+
+    return key
+
+def validateKeyIsUnique(encryption_type: str, key: List[int], db: Session):
+    # So we first get all existing encryption keys with the same encryption type
+    all_keys = db.query(models.EncryptionKey).filter(models.EncryptionKey.encryption_type == encryption_type).all()
+
+    for encryption_key in all_keys:
+        if encryption_key.key == key:
+            return False
+
+    return True
