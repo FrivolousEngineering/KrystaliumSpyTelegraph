@@ -157,7 +157,7 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
     secondary_key = []
     secondary_encryption_type = ""
 
-    is_succesfull = False
+    is_successful = False
 
     for primary_encryption_key in all_primary_group_keys:
 
@@ -173,7 +173,7 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
         except Exception as e:
             print(f"failed to add for {primary_encryption_key.encryption_type}: {e}")
             continue
-        is_succesfull = True
+        is_successful = True
         if not grid_msg.secondary_message:
             break  # No secondary message; use current grid.
 
@@ -198,7 +198,7 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
         else:
             # Reset grid and try the next primary key.
             grid = EncryptionGrid(10, estimated_rows_needed)
-            is_succesfull = False
+            is_successful = False
 
 
     # Debug prints to check if the encoding went well
@@ -208,7 +208,7 @@ def _handleGridMessage(grid_msg: schemas.GridMessage, db: Session):
             f"Attempting to decode Secondary message encoded with {secondary_encryption_type} and key {secondary_key}: {grid.decodeMethod(secondary_encryption_type, secondary_key)}")
 
 
-    if not is_succesfull:
+    if not is_successful:
         raise HTTPException(
             status_code=400,
             detail=f"Could not encode provided messages with any combination. Consider changing the message or making them shorter"
