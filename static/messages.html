@@ -28,7 +28,7 @@
       <option value="morse">Morse</option>
 
     </select>
-
+  <br>
     <!-- Fields common for both message types -->
     <label for="targetSelect">Target:</label>
     <select id="targetSelect">
@@ -40,7 +40,7 @@
       <option value="LocalCivilian">LocalCivilian</option>
       <option value="LongRange">LongRange</option>
     </select>
-
+  <br>
     <label for="author">Author:</label>
     <input type="text" id="author" required />
 
@@ -58,13 +58,15 @@
       <label for="primaryGroup">Primary Group:</label>
       <select id="primaryGroup"></select>
 
+      <br> <br>
+
       <label for="secondaryMessage">Secondary Message:</label>
       <textarea id="secondaryMessage"></textarea>
 
       <label for="secondaryGroup">Secondary Group:</label>
       <select id="secondaryGroup" onchange="toggleSecondaryMessageField()"></select>
     </div>
-
+    <br>
     <button onclick="sendMessage()">Send</button>
   </div>
 
