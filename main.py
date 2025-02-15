@@ -92,6 +92,9 @@ class PygameWrapper:
         self._printer = Printer()
         self._arm_pos = "Relay"
 
+        self._target = ""
+
+
     def _requestUnprintedMessagesFromServer(self) -> None:
         """
         This will start a thread that will handle the request to the server to ask for unprinted messages.
@@ -132,6 +135,10 @@ class PygameWrapper:
                     else:
                         logging.info("Got a grid message ")
                         self._message_queue.put("--header--")
+                        self._target = data[0]["target"]
+                        #self._message_queue.put("--intro--")
+                        #self._message_queue.put("--intro2--")
+
                         for line in data[0]["encoded_text"].split("\n"):
                             self._message_queue.put(line)
                         self._message_queue.put("--footer--")
@@ -287,7 +294,11 @@ class PygameWrapper:
                             elif "footer" in text_to_print:
                                 self._printer.feedSingle()
                                 self._printer.printImage("DividerFlipped.png")
+                            elif "--intro--" in text_to_print:
 
+                                self._printer.printSingleLineText(f"Origin: {self._target}")
+                            elif "--intro2--" in text_to_print:
+                                self._printer.printSingleLineText(f"Encoded message follows")
                             self._sound.playLongClick()
                             pass
 

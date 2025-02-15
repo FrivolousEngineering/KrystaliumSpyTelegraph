@@ -36,6 +36,7 @@ class Printer:
         subprocess.run(["sudo", "modprobe", "usblp"])
         subprocess.run(["sudo", "chmod", "666", "/dev/usb/lp1"])
 
+
     def feedSingle(self):
         if not self._should_print:
             return True
@@ -88,6 +89,21 @@ class Printer:
             return True
         except (DeviceNotFoundError, USBError):
             logging.warning("printer not found while printing image")
+            self._printer = self._createPrinter()
+            return False
+
+    def printSingleLineText(self, line: str) -> bool:
+        if not self._should_print:
+            return True
+        if not self.hasPaper():
+            return False
+        try:
+            self._printer.set(bold=True)
+            self._printer.text(line)
+            self._printer.control("LF")
+            return True
+        except (DeviceNotFoundError, USBError):
+            logging.warning("printer not found while printing text")
             self._printer = self._createPrinter()
             return False
 
