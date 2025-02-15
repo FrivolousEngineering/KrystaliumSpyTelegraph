@@ -75,6 +75,9 @@ def get_all_messages(db: Session = Depends(get_db)):
     return crud.getAllMessages(db)
 
 
+
+
+
 @app.get("/messages/unprinted/", response_model=list[schemas.Message], tags=["Messages"])
 def get_all_unprinted_messages(db: Session = Depends(get_db)):
     """
@@ -91,6 +94,14 @@ def get_message_by_id(message_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=f"Message with ID [{message_id}] was not found")
     return db_message
 
+
+@app.delete("/messages/{message_id}/", responses = {404: {"model": schemas.NotFoundError}},
+            tags = ["Messages"])
+def delete_message_by_id(message_id: int, db: Session = Depends(get_db)):
+    db_message = crud.getMessageById(message_id, db)
+    if not db_message:
+        raise HTTPException(status_code=404, detail=f"Message with ID [{message_id}] was not found")
+    crud.deleteMessageById(message_id, db)
 
 @app.post("/messages/{message_id}/reprint",
           responses={400: {"model": schemas.BadRequestError}, 404: {"model": schemas.NotFoundError}}, tags=["Messages"])

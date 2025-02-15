@@ -21,6 +21,11 @@ def getMessageById(message_id: int, db: Session) -> Optional[models.Message]:
     return db.query(models.Message).filter(models.Message.id == message_id).first()
 
 
+def deleteMessageById(message_id: int, db: Session):
+    db.delete(getMessageById(message_id, db))
+    db.commit()
+
+
 def getAllUnprintedMessages(db: Session) -> List[models.Message]:
     return db.query(models.Message).filter(models.Message.time_printed == None)
 
