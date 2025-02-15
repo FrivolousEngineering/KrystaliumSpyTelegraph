@@ -77,7 +77,9 @@ class PygameWrapper:
         self._sound = SoundController()
 
         self._start_playing_message = False
-        self._morse_queue: Queue = Queue()
+
+        self._message_queue: Queue = Queue()
+        self._printing_morse = True
 
         self._request_message_to_be_printed_thread: Optional[threading.Thread] = None
         self._request_message_pending = False
@@ -122,10 +124,16 @@ class PygameWrapper:
                     self.markMessageAsPrinted(self._last_printed_message_id)
                     self._request_message_pending = False
                 else:
-                    if data[0]["type"] == "Morse":
+                    if data[0]["type"] == "morse":
+                        logging.info("Got a morse message ")
                         for char in data[0]["encoded_text"]:
-                            self._morse_queue.put(char)
-
+                            self._message_queue.put(char)
+                        self._printing_morse = True
+                    else:
+                        logging.info("Got a grid message ")
+                        for line in data[0]["encoded_text"].split("\n"):
+                            self._message_queue.put(line)
+                        self._printing_morse = False
 
                     self._peripheral_controller.setActiveLed(Target.getIndex(data[0]["target"]))
                     self._peripheral_controller.setVoltMeterActive(True)
@@ -218,7 +226,7 @@ class PygameWrapper:
 
                 if event.type == sound_completed_event or event.type == retry_printer_not_found_event:
                     # The sound that was running has completed or the timeout for failure was hit.
-                    if not self._morse_queue.queue:
+                    if not self._message_queue.queue:
                         logging.info("Queue is empty")
 
                         if self._printer.feedPaper():
@@ -236,39 +244,48 @@ class PygameWrapper:
                             # Set an event to try again after some time
                             self._triggerEvent(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME)
                         continue
-                    if self._morse_queue.queue[0] == " ":
+                    if self._message_queue.queue[0] == " ":
                         self._triggerEvent(pause_between_tick_event, self.MIN_SPACE_PAUSE, self.MAX_SPACE_PAUSE)
                     else:
                         # Set a new event to put some pause between the ticks
                         self._triggerEvent(pause_between_tick_event, self.MIN_CHAR_PAUSE, self.MAX_CHAR_PAUSE)
 
-                elif event.type == pause_between_tick_event:
-                    # The pause between sounds has completed. What is the next sound that we have to play?
-                    char_to_play = self._morse_queue.get()
+                elif event.type == pause_between_tick_event: # The pause between sounds has completed. What is the next sound that we have to play?
                     failed_to_print = False
-                    if char_to_play == " ":
-                        # Print the message (although we might want to start that when we get the message tho?
-                        if self._printer.printSpace():
-                            # Post a "fake" sound completed event, this will trigger the next sound to be played.
-                            pygame.event.post(pygame.event.Event(sound_completed_event))
-                            continue  # We already did the pause, move on!
-                        else:
-                            failed_to_print = True
+                    text_to_print = self._message_queue.get()
+                    if self._printing_morse:
+                        # We're printing char by char
 
-                    if char_to_play == "-":
-                        if self._printer.printImage("dash.png"):
-                            self._sound.playLongClick()
+                        if text_to_print == " ":
+                            # Print the message (although we might want to start that when we get the message tho?
+                            if self._printer.printSpace():
+                                # Post a "fake" sound completed event, this will trigger the next sound to be played.
+                                pygame.event.post(pygame.event.Event(sound_completed_event))
+                                continue  # We already did the pause, move on!
+                            else:
+                                failed_to_print = True
+
+                        if text_to_print == "-":
+                            if self._printer.printImage("dash.png"):
+                                self._sound.playLongClick()
+                            else:
+                                failed_to_print = True
                         else:
-                            failed_to_print = True
-                    else:
-                        if self._printer.printImage("dot.png"):
-                            self._sound.playShortClick()
+                            if self._printer.printImage("dot.png"):
+                                self._sound.playShortClick()
+                            else:
+                                failed_to_print = True
+                    else: # We're printing grids
+
+                        if self._printer.printGridTextLine(text_to_print):
+                            self._sound.playLongClick()
+                            # Maye we should randomly play either? idk..
                         else:
                             failed_to_print = True
 
                     if failed_to_print:
                         logging.warning("Failed to print, scheduling again until printer is back")
-                        self._morse_queue.queue.insert(0, char_to_play)
+                        self._message_queue.queue.insert(0, text_to_print)
                         # Set an event to try again after some time
                         self._triggerEvent(retry_printer_not_found_event, self.RETRY_PRINTER_NOT_FOUND_TIME)
 
@@ -280,6 +297,7 @@ class PygameWrapper:
                     self._request_message_pending = False
         self._peripheral_controller.stop()
         quit()
+
 
 
 if __name__ == '__main__':

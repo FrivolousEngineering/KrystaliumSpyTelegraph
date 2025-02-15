@@ -75,9 +75,28 @@ class Printer:
             self._printer.image(img)
             return True
         except (DeviceNotFoundError, USBError):
-            logging.warning("printer not found")
+            logging.warning("printer not found while printing image")
             self._printer = self._createPrinter()
             return False
+
+    def printGridTextLine(self, line: str) -> bool:
+        if not self._should_print:
+            return True
+        if not self.hasPaper():
+            return False
+        try:
+            self._printer.set(bold=True)
+            # Ensure we use double spaces
+            text_to_print = line.replace(" ", "  ")
+            # And print with 2 spaces in front of if (for spacing)
+            self._printer.text(f"  {text_to_print}")
+            self._printer.control("LF")
+            return True
+        except (DeviceNotFoundError, USBError):
+            logging.warning("printer not found while printing text")
+            self._printer = self._createPrinter()
+            return False
+
 
     def hasPaper(self):
         if not runningAsRoot():

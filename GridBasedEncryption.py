@@ -571,34 +571,19 @@ class EncryptionGrid:
 
 
 if __name__ == "__main__":
+    grid = EncryptionGrid(10, 9)
+    grid._grid = [
+            list("HAMVUDQMVW"),
+            list("EXOAVCP.KE"),
+            list("BSHZHFJV.F"),
+            list("IAXMSXGYWX"),
+            list("VGKGAKDAOE"),
+            list("GGZIE.RZM."),
+            list("...KHDHE.."),
+            list("STP.HN.FE."),
+            list("C..F..SSME"),
+        ]
 
-    grid = EncryptionGrid(5,2)
-    '''grid._grid = [
-        list("ABCDE"),
-        list("FGHIJ"),
-        list("KLMNO"),
-        list("PQRST"),
-        list("UVWXY"),
-    ]'''
-
-
-
-    '''grid._grid = [
-        list("AAAAA"),
-        list("AAAAA"),
-        list("AAAAA"),
-        list("AAAAA"),
-        list("AAAAA"),
-    ]'''
-
-    import EncryptionGridVisualizer
-
-    viz = EncryptionGridVisualizer.EncryptionGridVisualizer(grid)
-    viz.displayGrid()
-    print()
-    preset_key = [1,2,3]
-    key = grid.addMessageRowMethod("BJOOOOOP")
-    print(key)
-    viz.displayGrid()
-    print(grid.decodeSkipMethod(key))
+    print(grid.decodeSkipPlowMethod([0,1,2]))
+    print(grid.decodeSkipMethod([0, 1, 2]))
 

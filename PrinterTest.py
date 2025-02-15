@@ -50,18 +50,6 @@ def hasPaper():
         return False
 
 
-if hasPaper():
-    try:
-        p = escposPrinter.Usb(0x28e9, 0x0289, out_ep=0x03, profile="ZJ-5870")
-        p.control("LF")
-        p.close()
-    except Exception as e:
-        print("Error printing:", e)
-else:
-    print("NO PAPER :(")
-
-
-
 
 #reset_usb_printer()
 #status = p.device.read(p.in_ep)

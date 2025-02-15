@@ -89,6 +89,7 @@ class Message(MessageBase):
     encoded_text: str
     text: str
     secondary_text: Optional[str]
+    type: str
 
 
 class GroupBase(BaseModel):
