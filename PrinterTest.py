@@ -51,6 +51,11 @@ def hasPaper():
 
 
 
+
+
+p = escposPrinter.Usb(0x28e9, 0x0289, out_ep=0x03, profile="ZJ-5870")
+p.image("Divider.png")
+
 #reset_usb_printer()
 #status = p.device.read(p.in_ep)
 #print(status)

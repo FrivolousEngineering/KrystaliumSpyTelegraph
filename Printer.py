@@ -36,6 +36,18 @@ class Printer:
         subprocess.run(["sudo", "modprobe", "usblp"])
         subprocess.run(["sudo", "chmod", "666", "/dev/usb/lp1"])
 
+    def feedSingle(self):
+        if not self._should_print:
+            return True
+        # Move the paper a bit so that we have some whitespace to tear it off
+        if not self.hasPaper():
+            return False
+        try:
+            self._printer.control("LF")
+            return True
+        except (DeviceNotFoundError, USBError):
+            self._printer = self._createPrinter()
+            return False
     def feedPaper(self) -> bool:
         if not self._should_print:
             return True

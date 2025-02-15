@@ -131,8 +131,10 @@ class PygameWrapper:
                         self._printing_morse = True
                     else:
                         logging.info("Got a grid message ")
+                        self._message_queue.put("--header--")
                         for line in data[0]["encoded_text"].split("\n"):
                             self._message_queue.put(line)
+                        self._message_queue.put("--footer--")
                         self._printing_morse = False
 
                     self._peripheral_controller.setActiveLed(Target.getIndex(data[0]["target"]))
@@ -276,12 +278,26 @@ class PygameWrapper:
                             else:
                                 failed_to_print = True
                     else: # We're printing grids
+                        if text_to_print.startswith("--") and text_to_print.endswith("--"):
+                            logging.info("Printing special instruction")
+                            if "header" in text_to_print:
+                                self._printer.printImage("Divider.png")
+                                self._printer.feedSingle()
+                                self._printer.feedSingle()
+                            elif "footer" in text_to_print:
+                                self._printer.feedSingle()
+                                self._printer.printImage("DividerFlipped.png")
 
-                        if self._printer.printGridTextLine(text_to_print):
                             self._sound.playLongClick()
-                            # Maye we should randomly play either? idk..
+                            pass
+
                         else:
-                            failed_to_print = True
+                            # Printing normal characters
+                            if self._printer.printGridTextLine(text_to_print):
+                                self._sound.playLongClick()
+                                # Maye we should randomly play either? idk..
+                            else:
+                                failed_to_print = True
 
                     if failed_to_print:
                         logging.warning("Failed to print, scheduling again until printer is back")
