@@ -46,6 +46,9 @@ class PygameWrapper:
     MIN_CHAR_PAUSE = 1
     MAX_CHAR_PAUSE = 1
 
+    MIN_ROW_PAUSE = 400
+    MAX_ROW_PAUSE = 500
+
     REQUEST_UPDATE_TIME = 2000  # 2 sec
     MIN_TIME_BETWEEN_MESSAGES = 10000  # 10 seconds
     RETRY_PRINTER_NOT_FOUND_TIME = 2000  # 2 seconds
@@ -257,7 +260,10 @@ class PygameWrapper:
                         self._triggerEvent(pause_between_tick_event, self.MIN_SPACE_PAUSE, self.MAX_SPACE_PAUSE)
                     else:
                         # Set a new event to put some pause between the ticks
-                        self._triggerEvent(pause_between_tick_event, self.MIN_CHAR_PAUSE, self.MAX_CHAR_PAUSE)
+                        if self._printing_morse:
+                            self._triggerEvent(pause_between_tick_event, self.MIN_CHAR_PAUSE, self.MAX_CHAR_PAUSE)
+                        else:
+                            self._triggerEvent(pause_between_tick_event, self.MIN_ROW_PAUSE, self.MAX_ROW_PAUSE)
 
                 elif event.type == pause_between_tick_event: # The pause between sounds has completed. What is the next sound that we have to play?
                     failed_to_print = False
