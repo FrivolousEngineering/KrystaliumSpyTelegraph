@@ -301,4 +301,11 @@ def postEncryptionKey(key: EncryptionKeyCreate, db: Session = Depends(get_db)):
     if not db_group:
         raise HTTPException(status_code=404, detail=f"Group with name '{key.group_name}' doesn't exist")
     return crud.createEncryptionKey(key, db)
-    pass
+
+@app.delete("/encryption_keys/{encryption_key_id}/", responses = {404: {"model": schemas.NotFoundError}},
+            tags = ["Encryption Keys"])
+def delete_message_by_id(encryption_key_id: int, db: Session = Depends(get_db)):
+    db_message = crud.getEncryptionKeyById(encryption_key_id, db)
+    if not db_message:
+        raise HTTPException(status_code=404, detail=f"Key with ID [{encryption_key_id}] was not found")
+    crud.deleteEncryptionKeyById(encryption_key_id, db)

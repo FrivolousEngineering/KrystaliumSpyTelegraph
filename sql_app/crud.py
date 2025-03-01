@@ -25,6 +25,13 @@ def deleteMessageById(message_id: int, db: Session):
     db.delete(getMessageById(message_id, db))
     db.commit()
 
+def deleteEncryptionKeyById(encryption_key_id: int, db: Session):
+    db.delete(getEncryptionKeyById(encryption_key_id, db))
+    db.commit()
+
+def getEncryptionKeyById(encryption_key_id: int, db: Session) -> Optional[models.EncryptionKey]:
+    return db.query(models.EncryptionKey).filter(models.EncryptionKey.id == encryption_key_id).first()
+
 
 def getAllUnprintedMessages(db: Session) -> List[models.Message]:
     return db.query(models.Message).filter(models.Message.time_printed == None)
