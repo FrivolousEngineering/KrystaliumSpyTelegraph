@@ -74,6 +74,11 @@ def createGridMessage(db: Session, primary_text, secondary_text, flat_grid_text:
 def getGroupByName(group_name: str, db: Session) -> Optional[models.EncryptionGroup]:
     return db.query(models.EncryptionGroup).filter(models.EncryptionGroup.name == group_name).first()
 
+
+def getGroupById(group_id: int, db: Session) -> Optional[models.EncryptionGroup]:
+    return db.query(models.EncryptionGroup).filter(models.EncryptionGroup.id == group_id).first()
+
+
 def getAllGroups(db: Session) -> List[models.EncryptionGroup]:
     return db.query(models.EncryptionGroup).all()
 
@@ -88,6 +93,14 @@ def createGroup(group: schemas.GroupCreate, db: Session) -> models.EncryptionGro
 def getAllEncryptionKeys(db: Session) -> List[models.EncryptionKey]:
     return db.query(models.EncryptionKey).all()
 
+
+def createEncryptionKey(key: schemas.EncryptionKeyCreate, db: Session) -> models.EncryptionKey:
+    db_group = getGroupByName(key.group_name, db)
+    db_key = models.EncryptionKey(encryption_type=key.encryption_type, group_id = db_group.id, key = key.key)
+    db.add(db_key)
+    db.commit()
+    db.refresh(db_key)
+    return db_key
 
 def getAllEncryptionKeysByGroup(group_name: str, db: Session) -> List[models.EncryptionKey]:
     return (

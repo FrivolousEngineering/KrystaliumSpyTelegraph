@@ -11,6 +11,9 @@ from GridBasedEncryption import EncryptionGrid
 from . import crud, models, schemas
 from .database import SessionLocal, engine
 import random
+
+from .schemas import EncryptionKeyCreate
+
 models.Base.metadata.create_all(bind=engine)
 
 import logging
@@ -289,3 +292,13 @@ def createNewEncryptionKeyForGroup(group_name: str, key_type: str, db: Session =
 @app.get("/encryption_keys/", response_model=list[schemas.EncryptionKey], tags=["Encryption Keys"])
 def getEncryptionKeys(db: Session = Depends(get_db)):
     return crud.getAllEncryptionKeys(db)
+
+
+
+@app.post("/encryption_keys")
+def postEncryptionKey(key: EncryptionKeyCreate, db: Session = Depends(get_db)):
+    db_group = crud.getGroupByName(key.group_name, db)
+    if not db_group:
+        raise HTTPException(status_code=404, detail=f"Group with name '{key.group_name}' doesn't exist")
+    return crud.createEncryptionKey(key, db)
+    pass

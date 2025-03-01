@@ -117,8 +117,11 @@ class EncryptionKey(EncryptionKeyBase):
     class Config:
         orm_mode = True
 
-class EncryptionKeyCreate(EncryptionKeyBase):
-    pass
+class EncryptionKeyCreate(BaseModel):
+    key: List[int]
+    encryption_type: EncryptionType
+    group_name: str
+
 
 class BadRequestError(BaseModel):
     detail: str
